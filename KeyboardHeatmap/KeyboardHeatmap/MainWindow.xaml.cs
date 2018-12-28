@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Data;
 using System.Diagnostics;
 using System.Linq;
@@ -42,14 +43,23 @@ namespace KeyboardHeatmap
             }
             KListener.KeyDown += new RawKeyEventHandler(KListener_KeyDown);
             keyListView.ItemsSource = keyList;
+            CollectionView view = (CollectionView)CollectionViewSource.GetDefaultView(keyListView.ItemsSource);
+            view.Filter = UserFilter;
+            
+        }
+
+        private bool UserFilter(object item)
+        {
+            return ((item as KeyStroke).NumPress >= 1);
         }
 
         private void KListener_KeyDown(object sender, RawKeyEventArgs args)
         {
             //Console.WriteLine(args.VKCode);
-
             //keyDict[args.VKCode].NumPress += 1;
             keyList[args.VKCode].NumPress += 1;
+            CollectionView view = (CollectionView)CollectionViewSource.GetDefaultView(keyListView.ItemsSource);
+            view.Filter = UserFilter;
             //int keyMax = keyDict.Values.Max();
             int keyMax = keyList.Max(ke => ke.NumPress);
             for (int i = 0; i <= 254; i++)
@@ -79,22 +89,61 @@ namespace KeyboardHeatmap
         }
     }
 
-    public class KeyStroke
+    public class KeyStroke : INotifyPropertyChanged
     {
         private int id;
         private int numPress;
+        private string character;
         public KeyStroke(int id, int numPress)
         {
             Id = id;
             NumPress = numPress;
+            Character = System.Windows.Input.KeyInterop.KeyFromVirtualKey(Id).ToString();
         }
         public KeyStroke(int id)
         {
             Id = id;
             NumPress = 0;
+            Character = System.Windows.Input.KeyInterop.KeyFromVirtualKey(Id).ToString();
         }
-        public int Id { get => id; set => id = value; }
-        public int NumPress { get => numPress; set => numPress = value; }
+        public int Id
+        {
+            get => id;
+            set
+            {
+                id = value;
+                NotifyPropertyChanged("Id");
+            }
+        }
+        public int NumPress
+        {
+            get { return this.numPress; }
+            set
+            {
+                this.numPress = value;
+                NotifyPropertyChanged("NumPress");
+            }
+        }
+
+        public string Character
+        {
+            get => character;
+            set
+            {
+                character = value;
+                NotifyPropertyChanged("Character");
+            }
+        }
+
+        public event PropertyChangedEventHandler PropertyChanged;
+        private void NotifyPropertyChanged(String propertyName)
+        {
+            PropertyChangedEventHandler handler = PropertyChanged;
+            if (null != handler)
+            {
+                handler(this, new PropertyChangedEventArgs(propertyName));
+            }
+        }
     }
 
     public class KeyboardListener : IDisposable
@@ -165,7 +214,7 @@ namespace KeyboardHeatmap
         private IntPtr LowLevelKeyboardProc(int nCode, UIntPtr wParam, IntPtr lParam)
         {
             string chars = "";
-
+            Console.WriteLine($"LowLevelKeyboardProc {nCode}");
             if (nCode >= 0)
                 if (wParam.ToUInt32() == (int)InterceptKeys.KeyEvent.WM_KEYDOWN ||
                     wParam.ToUInt32() == (int)InterceptKeys.KeyEvent.WM_KEYUP ||
@@ -201,6 +250,8 @@ namespace KeyboardHeatmap
         /// <param name="character">Character as string.</param>
         private void KeyboardListener_KeyboardCallbackAsync(InterceptKeys.KeyEvent keyEvent, int vkCode, string character)
         {
+            Console.WriteLine($"LowLevelKeyboardProc {vkCode} - {keyEvent}");
+
             switch (keyEvent)
             {
                 // KeyDown events
@@ -270,7 +321,7 @@ namespace KeyboardHeatmap
         /// <returns>Returns string representation of this key, if not possible empty string is returned.</returns>
         public override string ToString()
         {
-            return VKCode.ToString();
+            return Key.ToString();
         }
 
         /// <summary>
