@@ -72,7 +72,7 @@ namespace KeyboardHeatmap
                         Console.WriteLine($"MAX {keyMax}  COL {col}  R{col} G{-col + 255} B{0}");
                         object keyLbl = Heatmap.FindName($"_{i}");
                         Label keyTile = keyLbl as Label;
-                        keyTile.ToolTip = $"Key {i} pressed {keyList[i]} times";
+                        keyTile.ToolTip = $"Key {keyList[i].Character}({i}) pressed {keyList[i].NumPress} times";
                         keyTile.Background = new SolidColorBrush(Color.FromArgb(255, (byte)col, (byte)(-col + 255), (byte)0));
                     }
                 }
