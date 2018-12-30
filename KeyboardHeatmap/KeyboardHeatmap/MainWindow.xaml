@@ -8,9 +8,9 @@
         mc:Ignorable="d"
         Title="Keyboard Heatmap" Height="370" Width="780" ResizeMode="CanMinimize">
     <Grid>
-        <TabControl Margin="10,10,10.333,9.667">
+        <TabControl Margin="10,10,10,20">
             <TabItem x:Name="Heatmap" Header="Heatmap">
-                <Grid Background="#FFE5E5E5">
+                <Grid Background="#FFE5E5E5" Margin="0,0,0,-1">
                     <Label x:Name="_27" Content="Esc" HorizontalAlignment="Left" Margin="40,70,0,0" VerticalAlignment="Top" Height="25" Width="25" Background="#FFABABAB" FontSize="10"/>
                     <Label x:Name="_112" Content="F1" HorizontalAlignment="Left" Margin="100,70,0,0" VerticalAlignment="Top" Height="25" Width="25" Background="#FFABABAB" FontSize="10"/>
                     <Label x:Name="_113" Content="F2" HorizontalAlignment="Left" Margin="130,70,0,0" VerticalAlignment="Top" Height="25" Width="25" Background="#FFABABAB" FontSize="10"/>
@@ -138,6 +138,6 @@
                 </Grid>
             </TabItem>
         </TabControl>
-
+        <Label x:Name="lblInfo" Content="Keyboard Heatmap" Height="20" VerticalAlignment="Bottom" HorizontalAlignment="Right"  Margin="0,0,20,0" FontSize="8" />
     </Grid>
 </Window>

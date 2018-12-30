@@ -1,24 +1,16 @@
-﻿using KeyboardHeatmap.Properties;
-using System;
-using System.Collections.Generic;
+﻿using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Data;
 using System.Diagnostics;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 using System.Windows.Threading;
 
 namespace KeyboardHeatmap
@@ -31,21 +23,24 @@ namespace KeyboardHeatmap
         KeyboardListener KListener = new KeyboardListener();
 
         //Dictionary<int, KeyStroke> keyDict = new Dictionary<int, KeyStroke>();
-        ObservableCollection<KeyStroke> keyList = new ObservableCollection< KeyStroke>();
+        ObservableCollection<KeyStroke> keyList = new ObservableCollection<KeyStroke>();
 
         public MainWindow()
         {
             InitializeComponent();
+            lblInfo.Content = $"{Assembly.GetExecutingAssembly().GetName().Name} v{Assembly.GetExecutingAssembly().GetName().Version.ToString()}";
             for (int i = 0; i <= 254; i++)
             {
                 //keyDict.Add(i, new KeyStroke(i));
                 keyList.Add(new KeyStroke(i));
             }
-            KListener.KeyDown += new RawKeyEventHandler(KListener_KeyDown);
+            KListener.KeyUp += new RawKeyEventHandler(KListener_KeyHandler);
+            //KListener.KeyUp += new RawKeyEventHandler(KListener_KeyDown);
+
             keyListView.ItemsSource = keyList;
             CollectionView view = (CollectionView)CollectionViewSource.GetDefaultView(keyListView.ItemsSource);
             view.Filter = UserFilter;
-            
+
         }
 
         private bool UserFilter(object item)
@@ -53,7 +48,7 @@ namespace KeyboardHeatmap
             return ((item as KeyStroke).NumPress >= 1);
         }
 
-        private void KListener_KeyDown(object sender, RawKeyEventArgs args)
+        private void KListener_KeyHandler(object sender, RawKeyEventArgs args)
         {
             //Console.WriteLine(args.VKCode);
             //keyDict[args.VKCode].NumPress += 1;
@@ -68,12 +63,14 @@ namespace KeyboardHeatmap
                 {
                     if (keyList[i].NumPress > 0)
                     {
-                        int col = (int)Math.Ceiling(keyList[i].NumPress * (double)255 / keyMax);
-                        Console.WriteLine($"MAX {keyMax}  COL {col}  R{col} G{-col + 255} B{0}");
+                        int col = (int)Math.Ceiling(keyList[i].NumPress * (double)255 / keyMax);    // Get our key color between 0 and 255
+                        //Console.WriteLine($"MAX {keyMax}  COL {col}  R{col} G{-col + 255} B{0}");
+                        int[] rgb = GetHeatMapColor(col); //Generate RGB values for our color
                         object keyLbl = Heatmap.FindName($"_{i}");
                         Label keyTile = keyLbl as Label;
                         keyTile.ToolTip = $"Key {keyList[i].Character}({i}) pressed {keyList[i].NumPress} times";
-                        keyTile.Background = new SolidColorBrush(Color.FromArgb(255, (byte)col, (byte)(-col + 255), (byte)0));
+                        //keyTile.Background = new SolidColorBrush(Color.FromArgb(255, (byte)col, (byte)(-col + 255), (byte)0));
+                        keyTile.Background = new SolidColorBrush(Color.FromArgb(255, (byte)rgb[0], (byte)rgb[1], (byte)rgb[2]));
                     }
                 }
                 catch (Exception e)
@@ -82,7 +79,31 @@ namespace KeyboardHeatmap
             //Console.WriteLine(args.ToString()); // Prints the text of pressed button, takes in account big and small letters. E.g. "Shift+a" => "A"
             //txtText.Text += args.ToString();
         }
+        private int[] GetHeatMapColor(float value)
+        {
+            float[,] color = { { 0, 0, 255 }, { 0, 255, 0 }, { 255, 255, 0 }, { 255, 0, 0 } };
+            int NUM_COLORS = color.Length/3;    // Number of colors in our array
+            int idx1;                           // |-- Our desired color will be between these two indexes in "color".
+            int idx2;                           // |
+            float fractBetween = 0;             // Fraction between "idx1" and "idx2" where our value is.
+            
+            if (value <= 0) { idx1 = idx2 = 0; }                        // accounts for an input <=0
+            else if (value >= 255) { idx1 = idx2 = NUM_COLORS - 1; }    // accounts for an input >=255
+            else
+            {
+                value = value * (NUM_COLORS - 1);           // Will multiply value by 3.
+                idx1 = (int)Math.Floor(value/255);          // Our desired color will be after this index.
+                idx2 = idx1 + 1;                            // ... and before this index (inclusive).
+                fractBetween = value/255 - (float)idx1;     // Distance between the two indexes (0-1).
+            }
 
+            int red = (int)Math.Ceiling((color[idx2, 0] - color[idx1, 0]) * fractBetween + color[idx1, 0]);
+            int green = (int)Math.Ceiling((color[idx2, 1] - color[idx1, 1]) * fractBetween + color[idx1, 1]);
+            int blue = (int)Math.Ceiling((color[idx2, 2] - color[idx1, 2]) * fractBetween + color[idx1, 2]);
+            Console.WriteLine($"{red} {green} {blue}");
+            int[] returned = { red, green, blue };
+            return returned;
+        }
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
             KListener.Dispose();
@@ -138,11 +159,7 @@ namespace KeyboardHeatmap
         public event PropertyChangedEventHandler PropertyChanged;
         private void NotifyPropertyChanged(String propertyName)
         {
-            PropertyChangedEventHandler handler = PropertyChanged;
-            if (null != handler)
-            {
-                handler(this, new PropertyChangedEventArgs(propertyName));
-            }
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
     }
 
@@ -157,10 +174,10 @@ namespace KeyboardHeatmap
             this.dispatcher = Dispatcher.CurrentDispatcher;
 
             // We have to store the LowLevelKeyboardProc, so that it is not garbage collected runtime
-            hookedLowLevelKeyboardProc = (InterceptKeys.LowLevelKeyboardProc)LowLevelKeyboardProc;
+            hookedLowLevelKeyboardProc = (NativeMethods.LowLevelKeyboardProc)LowLevelKeyboardProc;
 
             // Set the hook
-            hookId = InterceptKeys.SetHook(hookedLowLevelKeyboardProc);
+            hookId = NativeMethods.SetHook(hookedLowLevelKeyboardProc);
 
             // Assign the asynchronous callback event
             hookedKeyboardCallbackAsync = new KeyboardCallbackAsync(KeyboardListener_KeyboardCallbackAsync);
@@ -199,7 +216,7 @@ namespace KeyboardHeatmap
         /// <param name="character">Character</param>
         /// <param name="keyEvent">Keyboard event</param>
         /// <param name="vkCode">VKCode</param>
-        private delegate void KeyboardCallbackAsync(InterceptKeys.KeyEvent keyEvent, int vkCode, string character);
+        private delegate void KeyboardCallbackAsync(NativeMethods.KeyEvent keyEvent, int vkCode, string character);
 
         /// <summary>
         /// Actual callback hook.
@@ -216,20 +233,20 @@ namespace KeyboardHeatmap
             string chars = "";
             Console.WriteLine($"LowLevelKeyboardProc {nCode}");
             if (nCode >= 0)
-                if (wParam.ToUInt32() == (int)InterceptKeys.KeyEvent.WM_KEYDOWN ||
-                    wParam.ToUInt32() == (int)InterceptKeys.KeyEvent.WM_KEYUP ||
-                    wParam.ToUInt32() == (int)InterceptKeys.KeyEvent.WM_SYSKEYDOWN ||
-                    wParam.ToUInt32() == (int)InterceptKeys.KeyEvent.WM_SYSKEYUP)
+                if (wParam.ToUInt32() == (int)NativeMethods.KeyEvent.WM_KEYDOWN ||
+                    wParam.ToUInt32() == (int)NativeMethods.KeyEvent.WM_KEYUP ||
+                    wParam.ToUInt32() == (int)NativeMethods.KeyEvent.WM_SYSKEYDOWN ||
+                    wParam.ToUInt32() == (int)NativeMethods.KeyEvent.WM_SYSKEYUP)
                 {
                     // Captures the character(s) pressed only on WM_KEYDOWN
-                    chars = InterceptKeys.VKCodeToString((uint)Marshal.ReadInt32(lParam),
-                        (wParam.ToUInt32() == (int)InterceptKeys.KeyEvent.WM_KEYDOWN ||
-                        wParam.ToUInt32() == (int)InterceptKeys.KeyEvent.WM_SYSKEYDOWN));
+                    chars = NativeMethods.VKCodeToString((uint)Marshal.ReadInt32(lParam),
+                        (wParam.ToUInt32() == (int)NativeMethods.KeyEvent.WM_KEYDOWN ||
+                        wParam.ToUInt32() == (int)NativeMethods.KeyEvent.WM_SYSKEYDOWN));
 
-                    hookedKeyboardCallbackAsync.BeginInvoke((InterceptKeys.KeyEvent)wParam.ToUInt32(), Marshal.ReadInt32(lParam), chars, null, null);
+                    hookedKeyboardCallbackAsync.BeginInvoke((NativeMethods.KeyEvent)wParam.ToUInt32(), Marshal.ReadInt32(lParam), chars, null, null);
                 }
 
-            return InterceptKeys.CallNextHookEx(hookId, nCode, wParam, lParam);
+            return NativeMethods.CallNextHookEx(hookId, nCode, wParam, lParam);
         }
 
         /// <summary>
@@ -240,7 +257,7 @@ namespace KeyboardHeatmap
         /// <summary>
         /// Contains the hooked callback in runtime.
         /// </summary>
-        private InterceptKeys.LowLevelKeyboardProc hookedLowLevelKeyboardProc;
+        private NativeMethods.LowLevelKeyboardProc hookedLowLevelKeyboardProc;
 
         /// <summary>
         /// HookCallbackAsync procedure that calls accordingly the KeyDown or KeyUp events.
@@ -248,28 +265,28 @@ namespace KeyboardHeatmap
         /// <param name="keyEvent">Keyboard event</param>
         /// <param name="vkCode">VKCode</param>
         /// <param name="character">Character as string.</param>
-        private void KeyboardListener_KeyboardCallbackAsync(InterceptKeys.KeyEvent keyEvent, int vkCode, string character)
+        private void KeyboardListener_KeyboardCallbackAsync(NativeMethods.KeyEvent keyEvent, int vkCode, string character)
         {
             Console.WriteLine($"LowLevelKeyboardProc {vkCode} - {keyEvent}");
 
             switch (keyEvent)
             {
                 // KeyDown events
-                case InterceptKeys.KeyEvent.WM_KEYDOWN:
+                case NativeMethods.KeyEvent.WM_KEYDOWN:
                     if (KeyDown != null)
                         dispatcher.BeginInvoke(new RawKeyEventHandler(KeyDown), this, new RawKeyEventArgs(vkCode, false, character));
                     break;
-                case InterceptKeys.KeyEvent.WM_SYSKEYDOWN:
+                case NativeMethods.KeyEvent.WM_SYSKEYDOWN:
                     if (KeyDown != null)
                         dispatcher.BeginInvoke(new RawKeyEventHandler(KeyDown), this, new RawKeyEventArgs(vkCode, true, character));
                     break;
 
                 // KeyUp events
-                case InterceptKeys.KeyEvent.WM_KEYUP:
+                case NativeMethods.KeyEvent.WM_KEYUP:
                     if (KeyUp != null)
                         dispatcher.BeginInvoke(new RawKeyEventHandler(KeyUp), this, new RawKeyEventArgs(vkCode, false, character));
                     break;
-                case InterceptKeys.KeyEvent.WM_SYSKEYUP:
+                case NativeMethods.KeyEvent.WM_SYSKEYUP:
                     if (KeyUp != null)
                         dispatcher.BeginInvoke(new RawKeyEventHandler(KeyUp), this, new RawKeyEventArgs(vkCode, true, character));
                     break;
@@ -289,7 +306,7 @@ namespace KeyboardHeatmap
         /// </summary>
         public void Dispose()
         {
-            InterceptKeys.UnhookWindowsHookEx(hookId);
+            NativeMethods.UnhookWindowsHookEx(hookId);
         }
 
         #endregion IDisposable Members
@@ -356,7 +373,7 @@ namespace KeyboardHeatmap
     /// <summary>
     /// Winapi Key interception helper class.
     /// </summary>
-    internal static class InterceptKeys
+    internal static class NativeMethods
     {
         public delegate IntPtr LowLevelKeyboardProc(int nCode, UIntPtr wParam, IntPtr lParam);
         public static int WH_KEYBOARD_LL = 13;
@@ -406,7 +423,7 @@ namespace KeyboardHeatmap
         [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
         public static extern IntPtr CallNextHookEx(IntPtr hhk, int nCode, UIntPtr wParam, IntPtr lParam);
 
-        [DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
         public static extern IntPtr GetModuleHandle(string lpModuleName);
 
         #region Convert VKCode to string
@@ -462,8 +479,7 @@ namespace KeyboardHeatmap
 
             // Gets the current windows window handle, threadID, processID
             IntPtr currentHWnd = GetForegroundWindow();
-            uint currentProcessID;
-            uint currentWindowThreadID = GetWindowThreadProcessId(currentHWnd, out currentProcessID);
+            uint currentWindowThreadID = GetWindowThreadProcessId(currentHWnd, out uint currentProcessID);
 
             // This programs Thread ID
             uint thisProgramThreadId = GetCurrentThreadId();
