@@ -2,10 +2,12 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -29,6 +31,24 @@ namespace KeyboardHeatmap
         {
             InitializeComponent();
             lblInfo.Content = $"{Assembly.GetExecutingAssembly().GetName().Name} v{Assembly.GetExecutingAssembly().GetName().Version.ToString()}";
+
+            var HKL = NativeMethods.GetCurrentKeyboardLayout();
+            var aszasza = Thread.CurrentThread.CurrentCulture;
+            var nfaoiure = new CultureInfo("fr");
+            var oui = CultureInfo.CurrentCulture;
+            var frefrefre = Thread.CurrentThread.CurrentCulture.TwoLetterISOLanguageName;
+            var formLang = InputLanguageManager.Current.CurrentInputLanguage;
+            if (formLang.ToString() != "fr-FR")
+            {
+                Console.WriteLine($"Aye lad !");
+                ConvertToQwerty();
+            }
+            else
+            {
+                Console.WriteLine("Honhon bonjour");
+            }
+
+
             for (int i = 0; i <= 254; i++)
             {
                 //keyDict.Add(i, new KeyStroke(i));
@@ -104,6 +124,19 @@ namespace KeyboardHeatmap
             int[] returned = { red, green, blue };
             return returned;
         }
+
+        private void ConvertToQwerty()
+        {
+            lblWarning.Content = "Warning : Keyboard Keys mignt not be in the right place";
+            lblWarning.Visibility = Visibility.Visible;
+            _81.Margin = new Thickness(80, 150, 0, 0);
+            _65.Margin = new Thickness(85, 180, 0, 0);
+            _87.Margin = new Thickness(110, 150, 0, 0);
+            _90.Margin = new Thickness(105, 210, 0, 0);
+        }
+
+
+
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
             KListener.Dispose();
@@ -413,6 +446,21 @@ namespace KeyboardHeatmap
             }
         }
 
+        public static int GetCurrentKeyboardLayout()
+        {
+            try
+            {
+                IntPtr currentHWnd = GetForegroundWindow();
+                uint foregroundProcess = GetWindowThreadProcessId(currentHWnd, out uint currentProcessID);
+                int keyboardLayout = GetKeyboardLayout(foregroundProcess).ToInt32() & 0xFFFF;
+                return keyboardLayout;
+            }
+            catch (Exception)
+            {
+                return 1033; // Assume English if something went wrong.
+            }
+        }
+
         [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
         public static extern IntPtr SetWindowsHookEx(int idHook, LowLevelKeyboardProc lpfn, IntPtr hMod, uint dwThreadId);
 
@@ -425,6 +473,9 @@ namespace KeyboardHeatmap
 
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
         public static extern IntPtr GetModuleHandle(string lpModuleName);
+
+
+
 
         #region Convert VKCode to string
 

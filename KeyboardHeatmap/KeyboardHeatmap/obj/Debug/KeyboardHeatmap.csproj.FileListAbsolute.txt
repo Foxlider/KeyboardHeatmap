@@ -48,3 +48,7 @@ E:\Code\GitHub\KeyboardHeatmap\KeyboardHeatmap\KeyboardHeatmap\bin\Debug\Keyboar
 E:\Code\GitHub\KeyboardHeatmap\KeyboardHeatmap\KeyboardHeatmap\bin\Debug\KeyboardHeatmap.application
 E:\Code\GitHub\KeyboardHeatmap\KeyboardHeatmap\KeyboardHeatmap\obj\Debug\KeyboardHeatmap.exe.manifest
 E:\Code\GitHub\KeyboardHeatmap\KeyboardHeatmap\KeyboardHeatmap\obj\Debug\KeyboardHeatmap.application
+C:\Users\alexis_lonchambon\Documents\Code\KeyboardHeatmap\KeyboardHeatmap\KeyboardHeatmap\bin\Debug\KeyboardHeatmap.exe.manifest
+C:\Users\alexis_lonchambon\Documents\Code\KeyboardHeatmap\KeyboardHeatmap\KeyboardHeatmap\bin\Debug\KeyboardHeatmap.application
+C:\Users\alexis_lonchambon\Documents\Code\KeyboardHeatmap\KeyboardHeatmap\KeyboardHeatmap\obj\Debug\KeyboardHeatmap.exe.manifest
+C:\Users\alexis_lonchambon\Documents\Code\KeyboardHeatmap\KeyboardHeatmap\KeyboardHeatmap\obj\Debug\KeyboardHeatmap.application

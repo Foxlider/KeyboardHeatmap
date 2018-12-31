@@ -39,6 +39,7 @@ C:\Users\alexis_lonchambon\Documents\Code\KeyboardHeatmap\KeyboardHeatmap\Keyboa
 C:\Users\alexis_lonchambon\Documents\Code\KeyboardHeatmap\KeyboardHeatmap\KeyboardHeatmap\bin\Release\KeyboardHeatmap.pdb
 C:\Users\alexis_lonchambon\Documents\Code\KeyboardHeatmap\KeyboardHeatmap\KeyboardHeatmap\bin\Release\KeyboardHeatmap.exe.CodeAnalysisLog.xml
 C:\Users\alexis_lonchambon\Documents\Code\KeyboardHeatmap\KeyboardHeatmap\KeyboardHeatmap\bin\Release\KeyboardHeatmap.exe.lastcodeanalysissucceeded
+C:\Users\alexis_lonchambon\Documents\Code\KeyboardHeatmap\KeyboardHeatmap\KeyboardHeatmap\obj\Release\KeyboardHeatmap.csprojAssemblyReference.cache
 C:\Users\alexis_lonchambon\Documents\Code\KeyboardHeatmap\KeyboardHeatmap\KeyboardHeatmap\obj\Release\MainWindow.g.cs
 C:\Users\alexis_lonchambon\Documents\Code\KeyboardHeatmap\KeyboardHeatmap\KeyboardHeatmap\obj\Release\App.g.cs
 C:\Users\alexis_lonchambon\Documents\Code\KeyboardHeatmap\KeyboardHeatmap\KeyboardHeatmap\obj\Release\KeyboardHeatmap_MarkupCompile.cache

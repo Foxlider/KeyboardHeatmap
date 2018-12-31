@@ -121,6 +121,7 @@
                     <Label x:Name="_39" Content="-&gt;" HorizontalAlignment="Left" Margin="550, 240, 0, 0" VerticalAlignment="Top" Width="25" Height="25" Background="#FFABABAB" FontSize="10"/>
                     <Label x:Name="_96" Content="0" HorizontalAlignment="Left" Margin="590, 240, 0, 0" VerticalAlignment="Top" Width="55" Height="25" Background="#FFABABAB" FontSize="10"/>
                     <Label x:Name="_110" Content="." HorizontalAlignment="Left" Margin="650, 240, 0, 0" VerticalAlignment="Top" Width="25" Height="25" Background="#FFABABAB" FontSize="10"/>
+                    <Label x:Name="lblWarning" Content="You should not be able to see this" HorizontalAlignment="Center" Margin="40,10,0,0" VerticalAlignment="Top" FontWeight="Bold" BorderBrush="#FFB40000" Foreground="#FFC80000" Visibility="Hidden"/>
 
                 </Grid>
             </TabItem>
