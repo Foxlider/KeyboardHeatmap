@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -15,6 +16,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
 
+
 namespace KeyboardHeatmap
 {
     /// <summary>
@@ -26,11 +28,30 @@ namespace KeyboardHeatmap
 
         //Dictionary<int, KeyStroke> keyDict = new Dictionary<int, KeyStroke>();
         ObservableCollection<KeyStroke> keyList = new ObservableCollection<KeyStroke>();
+        Page currentLayout = new Page();
 
+        LayoutAZERTY azerty = new LayoutAZERTY();
+        LayoutENGB engb = new LayoutENGB();
+        LayoutENUS enus = new LayoutENUS();
         public MainWindow()
         {
             InitializeComponent();
             lblInfo.Content = $"{Assembly.GetExecutingAssembly().GetName().Name} v{Assembly.GetExecutingAssembly().GetName().Version.ToString()}";
+            List<string> layoutList = new List<string>();
+            List<string> keyCapture = new List<string>();
+            currentLayout = azerty;
+            layoutFrame.Content = currentLayout;
+            layoutList.Add("AZERTY");
+            layoutList.Add("QWERTY (en-GB)");
+            layoutList.Add("QWERTY (en-US)");
+            layoutList.Add("QWERTZ");
+            cbLayout.SelectedValue = "AZERTY";
+            cbLayout.ItemsSource = layoutList;
+            keyCapture.Add("KeyUp");
+            keyCapture.Add("KeyDown");
+            cbKeyCapture.ItemsSource = keyCapture;
+            cbKeyCapture.SelectedValue = "KeyUp";
+            
 
             var HKL = NativeMethods.GetCurrentKeyboardLayout();
             var aszasza = Thread.CurrentThread.CurrentCulture;
@@ -38,14 +59,23 @@ namespace KeyboardHeatmap
             var oui = CultureInfo.CurrentCulture;
             var frefrefre = Thread.CurrentThread.CurrentCulture.TwoLetterISOLanguageName;
             var formLang = InputLanguageManager.Current.CurrentInputLanguage;
-            if (formLang.ToString() != "fr-FR")
-            {
-                Console.WriteLine($"Aye lad !");
-                ConvertToQwerty();
-            }
-            else
+            if (formLang.ToString() == "fr-FR")
             {
                 Console.WriteLine("Honhon bonjour");
+            }
+            else if (formLang.ToString() == "en-GB")
+            {
+                Console.WriteLine($"Aye lad !");
+                cbLayout.SelectedValue = "QWERTY (en-GB)";
+                currentLayout = engb;
+                layoutFrame.Content = currentLayout;
+            }
+            else if (formLang.ToString() == "en-US")
+            {
+                Console.WriteLine($"Hello !");
+                cbLayout.SelectedValue = "QWERTY (en-US)";
+                currentLayout = enus;
+                layoutFrame.Content = currentLayout;
             }
 
 
@@ -67,15 +97,43 @@ namespace KeyboardHeatmap
         {
             return ((item as KeyStroke).NumPress >= 1);
         }
+        
+
+        private void LayoutSelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            switch (cbLayout.SelectedItem.ToString())
+            {
+                case "AZERTY":
+                    Console.WriteLine("Switching to AZERTY");
+                    currentLayout = azerty;
+                    layoutFrame.Content = currentLayout;
+                    break;
+                case "QWERTY (en-GB)":
+                    Console.WriteLine("Switching to QWERTY");
+                    currentLayout = engb;
+                    layoutFrame.Content = currentLayout;
+                    break;
+                case "QWERTY (en-US)":
+                    Console.WriteLine("Switching to QWERTY");
+                    currentLayout = enus;
+                    layoutFrame.Content = currentLayout;
+                    break;
+                case "QWERTZ":
+                    Console.WriteLine("Switching to QWERTZ");
+                    lblWarning.Content = "Warning : QWERTZ is not available yet.";
+                    lblWarning.Visibility = Visibility.Visible;
+                    break;
+            }
+            layoutFrame.Focus();
+        }
 
         private void KListener_KeyHandler(object sender, RawKeyEventArgs args)
         {
-            //Console.WriteLine(args.VKCode);
+            Console.WriteLine(args.VKCode);
             //keyDict[args.VKCode].NumPress += 1;
             keyList[args.VKCode].NumPress += 1;
             CollectionView view = (CollectionView)CollectionViewSource.GetDefaultView(keyListView.ItemsSource);
             view.Filter = UserFilter;
-            //int keyMax = keyDict.Values.Max();
             int keyMax = keyList.Max(ke => ke.NumPress);
             for (int i = 0; i <= 254; i++)
             {
@@ -86,11 +144,17 @@ namespace KeyboardHeatmap
                         int col = (int)Math.Ceiling(keyList[i].NumPress * (double)255 / keyMax);    // Get our key color between 0 and 255
                         //Console.WriteLine($"MAX {keyMax}  COL {col}  R{col} G{-col + 255} B{0}");
                         int[] rgb = GetHeatMapColor(col); //Generate RGB values for our color
-                        object keyLbl = Heatmap.FindName($"_{i}");
-                        Label keyTile = keyLbl as Label;
-                        keyTile.ToolTip = $"Key {keyList[i].Character}({i}) pressed {keyList[i].NumPress} times";
-                        //keyTile.Background = new SolidColorBrush(Color.FromArgb(255, (byte)col, (byte)(-col + 255), (byte)0));
-                        keyTile.Background = new SolidColorBrush(Color.FromArgb(255, (byte)rgb[0], (byte)rgb[1], (byte)rgb[2]));
+                        //object keyLbl = Heatmap.FindName($"_{i}");
+                        try
+                        {
+                            object keyLbl = currentLayout.FindName($"_{i}");
+                            Label keyTile = keyLbl as Label;
+                            keyTile.ToolTip = $"Key {keyList[i].Character}({i}) pressed {keyList[i].NumPress} times";
+                            //keyTile.Background = new SolidColorBrush(Color.FromArgb(255, (byte)col, (byte)(-col + 255), (byte)0));
+                            keyTile.Background = new SolidColorBrush(Color.FromArgb(255, (byte)rgb[0], (byte)rgb[1], (byte)rgb[2]));
+                        }
+                        catch
+                        { Console.WriteLine($"No key _{i} in view"); }
                     }
                 }
                 catch (Exception e)
@@ -120,27 +184,67 @@ namespace KeyboardHeatmap
             int red = (int)Math.Ceiling((color[idx2, 0] - color[idx1, 0]) * fractBetween + color[idx1, 0]);
             int green = (int)Math.Ceiling((color[idx2, 1] - color[idx1, 1]) * fractBetween + color[idx1, 1]);
             int blue = (int)Math.Ceiling((color[idx2, 2] - color[idx1, 2]) * fractBetween + color[idx1, 2]);
-            Console.WriteLine($"{red} {green} {blue}");
+            //Console.WriteLine($"{red} {green} {blue}");
             int[] returned = { red, green, blue };
             return returned;
         }
-
-        private void ConvertToQwerty()
+        private void btn_Reset(object sender, RoutedEventArgs e)
         {
-            lblWarning.Content = "Warning : Keyboard Keys mignt not be in the right place";
-            lblWarning.Visibility = Visibility.Visible;
-            _81.Margin = new Thickness(80, 150, 0, 0);
-            _65.Margin = new Thickness(85, 180, 0, 0);
-            _87.Margin = new Thickness(110, 150, 0, 0);
-            _90.Margin = new Thickness(105, 210, 0, 0);
+            for (int i = 0; i <= 254; i++)
+            {
+                if (keyList[i].NumPress > 0)
+                {
+                    keyList[i].NumPress = 0;
+                    try
+                    {
+                        object keyLbl = currentLayout.FindName($"_{i}");
+                        Label keyTile = keyLbl as Label;
+                        keyTile.ToolTip = $"Key {keyList[i].Character}({i}) pressed {keyList[i].NumPress} times";
+                        //keyTile.Background = new SolidColorBrush(Color.FromArgb(255, (byte)col, (byte)(-col + 255), (byte)0));
+                        keyTile.Background = new SolidColorBrush(Color.FromArgb(255, (byte)171, (byte)171, (byte)171));
+                    }
+                    catch
+                    { Console.WriteLine($"No key _{i} in view"); }
+                }
+            }
+            Console.WriteLine("Keypresses cleared");
         }
 
+        private void CbLayout_DropDownClosed(object sender, EventArgs e)
+        {
+            if (cbLayout.IsDropDownOpen == false)
+            {
+                Console.WriteLine("Closed Selector");
+            }
+        }
 
+        private void CbKeyCapture_DropDownClosed(object sender, EventArgs e)
+        {
+            try
+            {
+                KListener.KeyUp -= KListener_KeyHandler;
+                KListener.KeyDown -= KListener_KeyHandler;
+            }
+            catch
+            { throw; }
+            try
+            {
+                if (cbKeyCapture.SelectedValue.ToString() == "KeyUp")
+                { KListener.KeyUp += new RawKeyEventHandler(KListener_KeyHandler); }
+                else
+                { KListener.KeyDown += new RawKeyEventHandler(KListener_KeyHandler); }
+                Console.WriteLine("Switched KListener");
+            }
+            catch (Exception ex)
+            { Console.WriteLine(ex); }
+        }
 
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
             KListener.Dispose();
         }
+
+        
     }
 
     public class KeyStroke : INotifyPropertyChanged
@@ -264,7 +368,7 @@ namespace KeyboardHeatmap
         private IntPtr LowLevelKeyboardProc(int nCode, UIntPtr wParam, IntPtr lParam)
         {
             string chars = "";
-            Console.WriteLine($"LowLevelKeyboardProc {nCode}");
+            //Console.WriteLine($"LowLevelKeyboardProc {nCode}");
             if (nCode >= 0)
                 if (wParam.ToUInt32() == (int)NativeMethods.KeyEvent.WM_KEYDOWN ||
                     wParam.ToUInt32() == (int)NativeMethods.KeyEvent.WM_KEYUP ||
@@ -300,7 +404,7 @@ namespace KeyboardHeatmap
         /// <param name="character">Character as string.</param>
         private void KeyboardListener_KeyboardCallbackAsync(NativeMethods.KeyEvent keyEvent, int vkCode, string character)
         {
-            Console.WriteLine($"LowLevelKeyboardProc {vkCode} - {keyEvent}");
+            //Console.WriteLine($"LowLevelKeyboardProc {vkCode} - {keyEvent}");
 
             switch (keyEvent)
             {
