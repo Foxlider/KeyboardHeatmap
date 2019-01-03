@@ -18,13 +18,12 @@
 ## Features
 
 - Keayboard heatmap
+- Handling QWERTY and AZERTY keymaps
 - Data viewer
 
 ## To do
 
-- Keymap detector (NOT AZERTY only)
-- Mouse click handler ? 
-- Reset
+- Mouse click handler
 
 ---
 
@@ -40,4 +39,3 @@
 Reach out to me at one of the following places!
 
 - Twitter at <a href="http://twitter.com/@Foxlidev" target="_blank">`@Foxlidev`</a>
-- Insert more social links here.
