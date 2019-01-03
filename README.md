@@ -40,4 +40,3 @@
 Reach out to me at one of the following places!
 
 - Twitter at <a href="http://twitter.com/@Foxlidev" target="_blank">`@Foxlidev`</a>
-- Insert more social links here.
