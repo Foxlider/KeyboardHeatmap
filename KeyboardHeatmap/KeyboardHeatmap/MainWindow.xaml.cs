@@ -27,7 +27,8 @@ namespace KeyboardHeatmap
         KeyboardListener KListener = new KeyboardListener();
 
         //Dictionary<int, KeyStroke> keyDict = new Dictionary<int, KeyStroke>();
-        ObservableCollection<KeyStroke> keyList = new ObservableCollection<KeyStroke>();
+        public ObservableCollection<KeyStroke> keyList = new ObservableCollection<KeyStroke>();
+        int keyMax;
         Page currentLayout = new Page();
 
         LayoutAZERTY azerty = new LayoutAZERTY();
@@ -36,6 +37,7 @@ namespace KeyboardHeatmap
         public MainWindow()
         {
             InitializeComponent();
+            // Find some better way to do all this ?
             lblInfo.Content = $"{Assembly.GetExecutingAssembly().GetName().Name} v{Assembly.GetExecutingAssembly().GetName().Version.ToString()}";
             List<string> layoutList = new List<string>();
             List<string> keyCapture = new List<string>();
@@ -51,13 +53,8 @@ namespace KeyboardHeatmap
             keyCapture.Add("KeyDown");
             cbKeyCapture.ItemsSource = keyCapture;
             cbKeyCapture.SelectedValue = "KeyUp";
-            
+            // Pretty ugly, huh ?
 
-            var HKL = NativeMethods.GetCurrentKeyboardLayout();
-            var aszasza = Thread.CurrentThread.CurrentCulture;
-            var nfaoiure = new CultureInfo("fr");
-            var oui = CultureInfo.CurrentCulture;
-            var frefrefre = Thread.CurrentThread.CurrentCulture.TwoLetterISOLanguageName;
             var formLang = InputLanguageManager.Current.CurrentInputLanguage;
             if (formLang.ToString() == "fr-FR")
             {
@@ -78,15 +75,18 @@ namespace KeyboardHeatmap
                 layoutFrame.Content = currentLayout;
             }
 
-
+            // Init our keyList to make sure everything is at 0
             for (int i = 0; i <= 254; i++)
             {
                 //keyDict.Add(i, new KeyStroke(i));
                 keyList.Add(new KeyStroke(i));
             }
-            KListener.KeyUp += new RawKeyEventHandler(KListener_KeyHandler);
-            //KListener.KeyUp += new RawKeyEventHandler(KListener_KeyDown);
 
+            // Here we set up our default listener on KeyUp
+            KListener.KeyUp += new RawKeyEventHandler(KListener_KeyHandler);
+            //KListener.KeyDown += new RawKeyEventHandler(KListener_KeyDown);
+
+            // Binding keyList display and filter
             keyListView.ItemsSource = keyList;
             CollectionView view = (CollectionView)CollectionViewSource.GetDefaultView(keyListView.ItemsSource);
             view.Filter = UserFilter;
@@ -95,27 +95,34 @@ namespace KeyboardHeatmap
 
         private bool UserFilter(object item)
         {
-            return ((item as KeyStroke).NumPress >= 1);
+            return ((item as KeyStroke).NumPress >= 1); // Only show the values above 1 in the list
         }
         
 
         private void LayoutSelectionChanged(object sender, SelectionChangedEventArgs e)
         {
+            // Layout switcher logic
             switch (cbLayout.SelectedItem.ToString())
             {
                 case "AZERTY":
                     Console.WriteLine("Switching to AZERTY");
                     currentLayout = azerty;
+                    lblWarning.Content = "You are not supposed to see this";
+                    lblWarning.Visibility = Visibility.Hidden;
                     layoutFrame.Content = currentLayout;
                     break;
                 case "QWERTY (en-GB)":
                     Console.WriteLine("Switching to QWERTY");
                     currentLayout = engb;
+                    lblWarning.Content = "You are not supposed to see this";
+                    lblWarning.Visibility = Visibility.Hidden;
                     layoutFrame.Content = currentLayout;
                     break;
                 case "QWERTY (en-US)":
                     Console.WriteLine("Switching to QWERTY");
                     currentLayout = enus;
+                    lblWarning.Content = "You are not supposed to see this";
+                    lblWarning.Visibility = Visibility.Hidden;
                     layoutFrame.Content = currentLayout;
                     break;
                 case "QWERTZ":
@@ -124,42 +131,18 @@ namespace KeyboardHeatmap
                     lblWarning.Visibility = Visibility.Visible;
                     break;
             }
-            layoutFrame.Focus();
+            layoutFrame.Focus(); // Focus elsewhere otherwise some keys change the bindings (A, Q, Arrow Up and down etc...)
+            UpdateKeymap(); // Update keymap to show the previsously typed keys
         }
 
         private void KListener_KeyHandler(object sender, RawKeyEventArgs args)
         {
-            Console.WriteLine(args.VKCode);
-            //keyDict[args.VKCode].NumPress += 1;
+            //Console.WriteLine(args.VKCode);
             keyList[args.VKCode].NumPress += 1;
             CollectionView view = (CollectionView)CollectionViewSource.GetDefaultView(keyListView.ItemsSource);
-            view.Filter = UserFilter;
-            int keyMax = keyList.Max(ke => ke.NumPress);
-            for (int i = 0; i <= 254; i++)
-            {
-                try
-                {
-                    if (keyList[i].NumPress > 0)
-                    {
-                        int col = (int)Math.Ceiling(keyList[i].NumPress * (double)255 / keyMax);    // Get our key color between 0 and 255
-                        //Console.WriteLine($"MAX {keyMax}  COL {col}  R{col} G{-col + 255} B{0}");
-                        int[] rgb = GetHeatMapColor(col); //Generate RGB values for our color
-                        //object keyLbl = Heatmap.FindName($"_{i}");
-                        try
-                        {
-                            object keyLbl = currentLayout.FindName($"_{i}");
-                            Label keyTile = keyLbl as Label;
-                            keyTile.ToolTip = $"Key {keyList[i].Character}({i}) pressed {keyList[i].NumPress} times";
-                            //keyTile.Background = new SolidColorBrush(Color.FromArgb(255, (byte)col, (byte)(-col + 255), (byte)0));
-                            keyTile.Background = new SolidColorBrush(Color.FromArgb(255, (byte)rgb[0], (byte)rgb[1], (byte)rgb[2]));
-                        }
-                        catch
-                        { Console.WriteLine($"No key _{i} in view"); }
-                    }
-                }
-                catch (Exception e)
-                { Console.WriteLine($"Error : {e}"); }
-            }
+            view.Filter = UserFilter;                   // gotta update everytime we press a key
+            keyMax = keyList.Max(ke => ke.NumPress);    // Get maximum of key presses
+            UpdateKeymap();                             // Update keymap again 
             //Console.WriteLine(args.ToString()); // Prints the text of pressed button, takes in account big and small letters. E.g. "Shift+a" => "A"
             //txtText.Text += args.ToString();
         }
@@ -180,15 +163,44 @@ namespace KeyboardHeatmap
                 idx2 = idx1 + 1;                            // ... and before this index (inclusive).
                 fractBetween = value/255 - (float)idx1;     // Distance between the two indexes (0-1).
             }
-
+            // Color selector logic
             int red = (int)Math.Ceiling((color[idx2, 0] - color[idx1, 0]) * fractBetween + color[idx1, 0]);
             int green = (int)Math.Ceiling((color[idx2, 1] - color[idx1, 1]) * fractBetween + color[idx1, 1]);
             int blue = (int)Math.Ceiling((color[idx2, 2] - color[idx1, 2]) * fractBetween + color[idx1, 2]);
-            //Console.WriteLine($"{red} {green} {blue}");
             int[] returned = { red, green, blue };
             return returned;
         }
-        private void btn_Reset(object sender, RoutedEventArgs e)
+
+        public void UpdateKeymap()
+        {
+            // The invoke is important to update the GUI. Otherwise it crashes.
+            this.Dispatcher.Invoke(() =>
+            {
+                for (int i = 0; i <= 254; i++)
+                {
+                    try
+                    {
+                        if (keyList[i].NumPress > 0) // Update only pressed keys to avoid blocking the GUI
+                        {
+                            var col = (int)Math.Ceiling(keyList[i].NumPress * (double)255 / keyMax);    // Get our key color between 0 and 255
+                            int[] rgb = GetHeatMapColor(col);                                           // Generate RGB values for our color
+                                try
+                                {
+                                    Label keyTile = (Label)currentLayout.FindName($"_{i}");     // Only way to get the label we want
+                                    //Label keyTile = keyLbl as Label;
+                                    keyTile.ToolTip = $"Key {keyList[i].Character}({i}) pressed {keyList[i].NumPress} times";
+                                    keyTile.Background = new SolidColorBrush(Color.FromArgb(255, (byte)rgb[0], (byte)rgb[1], (byte)rgb[2]));
+                                }
+                                catch
+                                { Console.WriteLine($"No key _{i} in view"); }
+                        }
+                    }
+                    catch (Exception ex)
+                    { Console.WriteLine($"Error : {ex}"); }
+                }
+            });
+        }
+        private void Btn_Reset(object sender, RoutedEventArgs e)
         {
             for (int i = 0; i <= 254; i++)
             {
@@ -197,8 +209,7 @@ namespace KeyboardHeatmap
                     keyList[i].NumPress = 0;
                     try
                     {
-                        object keyLbl = currentLayout.FindName($"_{i}");
-                        Label keyTile = keyLbl as Label;
+                        Label keyTile = (Label)currentLayout.FindName($"_{i}");
                         keyTile.ToolTip = $"Key {keyList[i].Character}({i}) pressed {keyList[i].NumPress} times";
                         //keyTile.Background = new SolidColorBrush(Color.FromArgb(255, (byte)col, (byte)(-col + 255), (byte)0));
                         keyTile.Background = new SolidColorBrush(Color.FromArgb(255, (byte)171, (byte)171, (byte)171));
@@ -213,17 +224,15 @@ namespace KeyboardHeatmap
         private void CbLayout_DropDownClosed(object sender, EventArgs e)
         {
             if (cbLayout.IsDropDownOpen == false)
-            {
-                Console.WriteLine("Closed Selector");
-            }
+            { Console.WriteLine("Closed Selector"); }
         }
 
         private void CbKeyCapture_DropDownClosed(object sender, EventArgs e)
         {
             try
             {
-                KListener.KeyUp -= KListener_KeyHandler;
-                KListener.KeyDown -= KListener_KeyHandler;
+                KListener.KeyUp -= KListener_KeyHandler;    // |-- Remove actual listeners
+                KListener.KeyDown -= KListener_KeyHandler;  // | 
             }
             catch
             { throw; }
@@ -244,11 +253,67 @@ namespace KeyboardHeatmap
             KListener.Dispose();
         }
 
-        
+
+        GridViewColumnHeader _lastHeaderClicked = null;
+        ListSortDirection _lastDirection = ListSortDirection.Ascending;
+        private void KeyListView_Click(object sender, RoutedEventArgs e)
+        {
+            // List View Order logic
+            //var headerClicked = e.OriginalSource as GridViewColumnHeader;
+            if (e.OriginalSource is GridViewColumnHeader)
+            {
+                var headerClicked = (GridViewColumnHeader)e.OriginalSource;
+                ListSortDirection direction;
+                if (headerClicked != null)
+                {
+                    if (headerClicked.Role != GridViewColumnHeaderRole.Padding)
+                    {
+                        if (headerClicked != _lastHeaderClicked)
+                        { direction = ListSortDirection.Ascending; }
+                        else
+                        {
+                            if (_lastDirection == ListSortDirection.Ascending)
+                            { direction = ListSortDirection.Descending; }
+                            else
+                            { direction = ListSortDirection.Ascending; }
+                        }
+
+                        var columnBinding = headerClicked.Column.DisplayMemberBinding as Binding;
+                        var sortBy = columnBinding?.Path.Path ?? headerClicked.Column.Header as string;
+
+                        Sort(sortBy, direction);
+
+                        if (direction == ListSortDirection.Ascending)
+                        { headerClicked.Column.HeaderTemplate = Resources["HeaderTemplateArrowUp"] as DataTemplate; }
+                        else
+                        { headerClicked.Column.HeaderTemplate = Resources["HeaderTemplateArrowDown"] as DataTemplate; }
+
+                        // Remove arrow from previously sorted header  
+                        if (_lastHeaderClicked != null && _lastHeaderClicked != headerClicked)
+                        { _lastHeaderClicked.Column.HeaderTemplate = null; }
+
+                        _lastHeaderClicked = headerClicked;
+                        _lastDirection = direction;
+                    }
+                }
+            }
+            
+        }
+
+        private void Sort(string sortBy, ListSortDirection direction)
+        {
+            ICollectionView dataView = CollectionViewSource.GetDefaultView(keyListView.ItemsSource);
+
+            dataView.SortDescriptions.Clear();
+            SortDescription sd = new SortDescription(sortBy, direction);
+            dataView.SortDescriptions.Add(sd);
+            dataView.Refresh();
+        }
     }
 
     public class KeyStroke : INotifyPropertyChanged
     {
+        // KeyStroke class storing data about each key and how many types it received
         private int id;
         private int numPress;
         private string character;
@@ -345,7 +410,7 @@ namespace KeyboardHeatmap
         /// <summary>
         /// Hook ID
         /// </summary>
-        private IntPtr hookId = IntPtr.Zero;
+        private readonly IntPtr hookId = IntPtr.Zero;
 
         /// <summary>
         /// Asynchronous callback hook.
@@ -394,7 +459,7 @@ namespace KeyboardHeatmap
         /// <summary>
         /// Contains the hooked callback in runtime.
         /// </summary>
-        private NativeMethods.LowLevelKeyboardProc hookedLowLevelKeyboardProc;
+        private readonly NativeMethods.LowLevelKeyboardProc hookedLowLevelKeyboardProc;
 
         /// <summary>
         /// HookCallbackAsync procedure that calls accordingly the KeyDown or KeyUp events.

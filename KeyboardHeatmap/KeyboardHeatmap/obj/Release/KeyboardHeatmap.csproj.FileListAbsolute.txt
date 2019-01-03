@@ -39,6 +39,7 @@ C:\Users\alexis_lonchambon\Documents\Code\KeyboardHeatmap\KeyboardHeatmap\Keyboa
 C:\Users\alexis_lonchambon\Documents\Code\KeyboardHeatmap\KeyboardHeatmap\KeyboardHeatmap\bin\Release\KeyboardHeatmap.pdb
 C:\Users\alexis_lonchambon\Documents\Code\KeyboardHeatmap\KeyboardHeatmap\KeyboardHeatmap\bin\Release\KeyboardHeatmap.exe.CodeAnalysisLog.xml
 C:\Users\alexis_lonchambon\Documents\Code\KeyboardHeatmap\KeyboardHeatmap\KeyboardHeatmap\bin\Release\KeyboardHeatmap.exe.lastcodeanalysissucceeded
+C:\Users\alexis_lonchambon\Documents\Code\KeyboardHeatmap\KeyboardHeatmap\KeyboardHeatmap\obj\Release\KeyboardHeatmap.csprojAssemblyReference.cache
 C:\Users\alexis_lonchambon\Documents\Code\KeyboardHeatmap\KeyboardHeatmap\KeyboardHeatmap\obj\Release\LayoutAZERTY.g.cs
 C:\Users\alexis_lonchambon\Documents\Code\KeyboardHeatmap\KeyboardHeatmap\KeyboardHeatmap\obj\Release\LayoutENGB.g.cs
 C:\Users\alexis_lonchambon\Documents\Code\KeyboardHeatmap\KeyboardHeatmap\KeyboardHeatmap\obj\Release\LayoutENUS.g.cs
@@ -58,4 +59,3 @@ C:\Users\alexis_lonchambon\Documents\Code\KeyboardHeatmap\KeyboardHeatmap\Keyboa
 C:\Users\alexis_lonchambon\Documents\Code\KeyboardHeatmap\KeyboardHeatmap\KeyboardHeatmap\obj\Release\KeyboardHeatmap.application
 C:\Users\alexis_lonchambon\Documents\Code\KeyboardHeatmap\KeyboardHeatmap\KeyboardHeatmap\obj\Release\KeyboardHeatmap.exe
 C:\Users\alexis_lonchambon\Documents\Code\KeyboardHeatmap\KeyboardHeatmap\KeyboardHeatmap\obj\Release\KeyboardHeatmap.pdb
-C:\Users\alexis_lonchambon\Documents\Code\KeyboardHeatmap\KeyboardHeatmap\KeyboardHeatmap\obj\Release\KeyboardHeatmap.csprojAssemblyReference.cache
