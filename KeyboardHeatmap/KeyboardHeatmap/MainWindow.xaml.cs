@@ -131,8 +131,9 @@ namespace KeyboardHeatmap
                     lblWarning.Visibility = Visibility.Visible;
                     break;
             }
-            layoutFrame.Focus();                // Focus elsewhere otherwise some keys change the bindings (A, Q, Arrow Up and down etc...)
-            new Thread(() => UpdateKeymap());   // Update keymap to show the previsously typed keys
+            layoutFrame.Focus();                        // Focus elsewhere otherwise some keys change the bindings (A, Q, Arrow Up and down etc...)
+            Keyboard.ClearFocus();                      // And clear all focus hopefully
+            new Thread(() => UpdateKeymap()).Start();   // Update keymap to show the previsously typed keys
         }
 
         private void KListener_KeyHandler(object sender, RawKeyEventArgs args)
@@ -142,7 +143,7 @@ namespace KeyboardHeatmap
             CollectionView view = (CollectionView)CollectionViewSource.GetDefaultView(keyListView.ItemsSource);
             view.Filter = UserFilter;                   // gotta update everytime we press a key
             keyMax = keyList.Max(ke => ke.NumPress);    // Get maximum of key presses
-            new Thread(() => UpdateKeymap());           // Update keymap again 
+            new Thread(() => UpdateKeymap()).Start();   // Update keymap again 
             //Console.WriteLine(args.ToString()); // Prints the text of pressed button, takes in account big and small letters. E.g. "Shift+a" => "A"
             //txtText.Text += args.ToString();
         }
