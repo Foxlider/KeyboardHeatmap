@@ -18,13 +18,12 @@
 ## Features
 
 - Keayboard heatmap
+- Handling QWERTY and AZERTY keymaps
 - Data viewer
 
 ## To do
 
-- Keymap detector (NOT AZERTY only)
-- Mouse click handler ? 
-- Reset
+- Mouse click handler
 
 ---
 
