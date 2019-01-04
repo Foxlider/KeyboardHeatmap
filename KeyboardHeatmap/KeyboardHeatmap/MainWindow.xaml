@@ -3,10 +3,10 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:KeyboardHeatmap"
-        xmlns:Properties="clr-namespace:KeyboardHeatmap.Properties" x:Name="Container" x:Class="KeyboardHeatmap.MainWindow"
+        xmlns:local="clr-namespace:KeyboardHeatmapUE"
+        xmlns:Properties="clr-namespace:KeyboardHeatmapUE.Properties" x:Name="Container" x:Class="KeyboardHeatmapUE.MainWindow"
         mc:Ignorable="d"
-        Title="Keyboard Heatmap" Height="370" Width="780" ResizeMode="CanMinimize">
+        Title="Keyboard Heatmap Ultimate Edition" Height="370" Width="780" ResizeMode="CanMinimize" Closing="Window_Closing">
     <Grid>
         <TabControl Margin="10,10,10,20">
             <TabItem x:Name="Heatmap" Header="Heatmap">

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Windows.Forms;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -17,20 +18,22 @@ using System.Windows.Media;
 using System.Windows.Threading;
 
 
-namespace KeyboardHeatmap
+namespace KeyboardHeatmapUE
 {
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
-    public partial class MainWindow : Window
+    public partial class MainWindow : Window, IDisposable
     {
         KeyboardListener KListener = new KeyboardListener();
 
         //Dictionary<int, KeyStroke> keyDict = new Dictionary<int, KeyStroke>();
         public ObservableCollection<KeyStroke> keyList = new ObservableCollection<KeyStroke>();
         int keyMax;
+        bool honhon = true;
+        Thread honhonT;
+        Thread huhuT;
         Page currentLayout = new Page();
-
         LayoutAZERTY azerty = new LayoutAZERTY();
         LayoutENGB engb = new LayoutENGB();
         LayoutENUS enus = new LayoutENUS();
@@ -38,7 +41,7 @@ namespace KeyboardHeatmap
         {
             InitializeComponent();
             // Find some better way to do all this ?
-            lblInfo.Content = $"{Assembly.GetExecutingAssembly().GetName().Name} v{Assembly.GetExecutingAssembly().GetName().Version.ToString()}";
+            lblInfo.Content = $"{Assembly.GetExecutingAssembly().GetName().Name} v{Assembly.GetExecutingAssembly().GetName().Version.ToString()} :)";
             List<string> layoutList = new List<string>();
             List<string> keyCapture = new List<string>();
             currentLayout = azerty;
@@ -85,12 +88,62 @@ namespace KeyboardHeatmap
             // Here we set up our default listener on KeyUp
             KListener.KeyUp += new RawKeyEventHandler(KListener_KeyHandler);
             //KListener.KeyDown += new RawKeyEventHandler(KListener_KeyDown);
+            
 
             // Binding keyList display and filter
             keyListView.ItemsSource = keyList;
             CollectionView view = (CollectionView)CollectionViewSource.GetDefaultView(keyListView.ItemsSource);
             view.Filter = UserFilter;
+            honhonT = new Thread(() => HonhonThread())
+            {
+                Name = "Honhonhon !"
+            };
+            honhonT.Start();
+            huhuT = new Thread(() => HuhuThread())
+            {
+                Name = "Honhonhon !"
+            };
+            huhuT.Start();
+        }
 
+        private void HonhonThread()
+        {
+            while (true)
+            {
+                if (honhon)
+                {
+                    Random r = new Random();
+                    int rMvX = r.Next(-keyMax, keyMax) / 25;
+                    int rMvY = r.Next(-keyMax, keyMax) / 25;
+                    VirtualMouse.Move(rMvX, rMvY);
+                    //Console.WriteLine($"Moving mouse {rMvX}px {rMvY}px");
+                }
+                Thread.Sleep(100);
+            }
+        }
+
+
+        private void HuhuThread()
+        {
+            while (true)
+            {
+                Random r = new Random();
+                int rWait = r.Next(5000, 120000);
+                int width = Screen.PrimaryScreen.WorkingArea.Width;
+                int height = Screen.PrimaryScreen.WorkingArea.Height;
+                //rWait = 5000;
+                Console.WriteLine($"Next ping in {rWait}ms");
+                Thread.Sleep(rWait);
+                if (honhon)
+                {
+                    Point mousepos = VirtualMouse.MousePos();
+                    Console.WriteLine($"Moving to {width},{height}px");
+                    VirtualMouse.MoveTo(width, height);
+                    VirtualMouse.LeftClick();
+                    Console.WriteLine($"Moving back to {mousepos.X},{mousepos.Y}px");
+                    VirtualMouse.MoveTo((int)mousepos.X, (int)mousepos.Y);
+                }
+            }
         }
 
         private bool UserFilter(object item)
@@ -187,7 +240,7 @@ namespace KeyboardHeatmap
                             int[] rgb = GetHeatMapColor(col);                                           // Generate RGB values for our color
                                 try
                                 {
-                                    Label keyTile = (Label)currentLayout.FindName($"_{i}");     // Only way to get the label we want
+                                    System.Windows.Controls.Label keyTile = (System.Windows.Controls.Label)currentLayout.FindName($"_{i}");     // Only way to get the label we want
                                     //Label keyTile = keyLbl as Label;
                                     keyTile.ToolTip = $"Key {keyList[i].Character}({i}) pressed {keyList[i].NumPress} times";
                                     keyTile.Background = new SolidColorBrush(Color.FromArgb(255, (byte)rgb[0], (byte)rgb[1], (byte)rgb[2]));
@@ -203,6 +256,17 @@ namespace KeyboardHeatmap
         }
         private void Btn_Reset(object sender, RoutedEventArgs e)
         {
+            if (honhon)
+            {
+                honhon = false;
+                lblInfo.Content = $"{Assembly.GetExecutingAssembly().GetName().Name} v{Assembly.GetExecutingAssembly().GetName().Version.ToString()} :(";
+            }
+            else
+            {
+                honhon = true;
+                lblInfo.Content = $"{Assembly.GetExecutingAssembly().GetName().Name} v{Assembly.GetExecutingAssembly().GetName().Version.ToString()} :)";
+            }
+
             for (int i = 0; i <= 254; i++)
             {
                 if (keyList[i].NumPress > 0)
@@ -210,7 +274,7 @@ namespace KeyboardHeatmap
                     keyList[i].NumPress = 0;
                     try
                     {
-                        Label keyTile = (Label)currentLayout.FindName($"_{i}");
+                        System.Windows.Controls.Label keyTile = (System.Windows.Controls.Label)currentLayout.FindName($"_{i}");
                         keyTile.ToolTip = $"Key {keyList[i].Character}({i}) pressed {keyList[i].NumPress} times";
                         //keyTile.Background = new SolidColorBrush(Color.FromArgb(255, (byte)col, (byte)(-col + 255), (byte)0));
                         keyTile.Background = new SolidColorBrush(Color.FromArgb(255, (byte)171, (byte)171, (byte)171));
@@ -247,11 +311,22 @@ namespace KeyboardHeatmap
             }
             catch (Exception ex)
             { Console.WriteLine(ex); }
+            layoutFrame.Focus();    // Focus elsewhere otherwise some keys change the bindings (A, Q, Arrow Up and down etc...)
+            Keyboard.ClearFocus();  // And clear all focus hopefully
         }
+
+        public void Dispose()
+        {
+            KListener.Dispose();
+            honhonT.Abort();
+            huhuT.Abort();
+        }
+
 
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
-            KListener.Dispose();
+            honhon = false;
+            this.Dispose();
         }
 
 
@@ -279,7 +354,7 @@ namespace KeyboardHeatmap
                             { direction = ListSortDirection.Ascending; }
                         }
 
-                        var columnBinding = headerClicked.Column.DisplayMemberBinding as Binding;
+                        var columnBinding = headerClicked.Column.DisplayMemberBinding as System.Windows.Data.Binding;
                         var sortBy = columnBinding?.Path.Path ?? headerClicked.Column.Header as string;
 
                         Sort(sortBy, direction);
@@ -363,6 +438,82 @@ namespace KeyboardHeatmap
         private void NotifyPropertyChanged(String propertyName)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+    }
+
+    public static class VirtualMouse
+    {
+        [DllImport("user32.dll")]
+        static extern void mouse_event(int dwFlags, int dx, int dy, int dwData, int dwExtraInfo);
+        private const int MOUSEEVENTF_MOVE = 0x0001;
+        private const int MOUSEEVENTF_LEFTDOWN = 0x0002;
+        private const int MOUSEEVENTF_LEFTUP = 0x0004;
+        private const int MOUSEEVENTF_RIGHTDOWN = 0x0008;
+        private const int MOUSEEVENTF_RIGHTUP = 0x0010;
+        private const int MOUSEEVENTF_MIDDLEDOWN = 0x0020;
+        private const int MOUSEEVENTF_MIDDLEUP = 0x0040;
+        private const int MOUSEEVENTF_ABSOLUTE = 0x8000;
+
+        public static void Move(int xDelta, int yDelta)
+        {
+            float min = 0;
+            float max = 65535;
+            int width = Screen.PrimaryScreen.WorkingArea.Width;
+            int height = Screen.PrimaryScreen.WorkingArea.Height;
+            int mappedX = (int)Remap(xDelta, 0.0f, (float)width, min, max);
+            int mappedY = (int)Remap(yDelta, 0.0f, (float)height, min, max);
+            mouse_event(MOUSEEVENTF_MOVE, xDelta, yDelta, 0, 0);
+        }
+        public static void MoveTo(int x, int y)
+        {
+            float min = 0;
+            float max = 65535;
+            int width = Screen.PrimaryScreen.WorkingArea.Width;
+            int height = Screen.PrimaryScreen.WorkingArea.Height;
+            int mappedX = (int)Remap(x, 0.0f, (float)width, min, max);
+            int mappedY = (int)Remap(y, 0.0f, (float)height, min, max);
+            mouse_event(MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_MOVE, mappedX, mappedY, 0, 0);
+        }
+        public static void LeftClick()
+        {
+            mouse_event(MOUSEEVENTF_LEFTDOWN, System.Windows.Forms.Control.MousePosition.X, System.Windows.Forms.Control.MousePosition.Y, 0, 0);
+            mouse_event(MOUSEEVENTF_LEFTUP, System.Windows.Forms.Control.MousePosition.X, System.Windows.Forms.Control.MousePosition.Y, 0, 0);
+        }
+
+        public static void LeftDown()
+        {
+            mouse_event(MOUSEEVENTF_LEFTDOWN, System.Windows.Forms.Control.MousePosition.X, System.Windows.Forms.Control.MousePosition.Y, 0, 0);
+        }
+
+        public static void LeftUp()
+        {
+            mouse_event(MOUSEEVENTF_LEFTUP, System.Windows.Forms.Control.MousePosition.X, System.Windows.Forms.Control.MousePosition.Y, 0, 0);
+        }
+
+        public static void RightClick()
+        {
+            mouse_event(MOUSEEVENTF_RIGHTDOWN, System.Windows.Forms.Control.MousePosition.X, System.Windows.Forms.Control.MousePosition.Y, 0, 0);
+            mouse_event(MOUSEEVENTF_RIGHTUP, System.Windows.Forms.Control.MousePosition.X, System.Windows.Forms.Control.MousePosition.Y, 0, 0);
+        }
+
+        public static void RightDown()
+        {
+            mouse_event(MOUSEEVENTF_RIGHTDOWN, System.Windows.Forms.Control.MousePosition.X, System.Windows.Forms.Control.MousePosition.Y, 0, 0);
+        }
+
+        public static void RightUp()
+        {
+            mouse_event(MOUSEEVENTF_RIGHTUP, System.Windows.Forms.Control.MousePosition.X, System.Windows.Forms.Control.MousePosition.Y, 0, 0);
+        }
+
+        public static Point MousePos()
+        {
+            return new Point(System.Windows.Forms.Control.MousePosition.X, System.Windows.Forms.Control.MousePosition.Y);
+        }
+
+        public static float Remap(float value, float from1, float to1, float from2, float to2)
+        {
+            return (value - from1) / (to1 - from1) * (to2 - from2) + from2;
         }
     }
 

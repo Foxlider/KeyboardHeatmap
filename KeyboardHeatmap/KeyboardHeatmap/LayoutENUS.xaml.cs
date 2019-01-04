@@ -13,7 +13,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 
-namespace KeyboardHeatmap
+namespace KeyboardHeatmapUE
 {
     /// <summary>
     /// Interaction logic for LayoutENUS.xaml

@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using System.Windows;
 
-namespace KeyboardHeatmap
+namespace KeyboardHeatmapUE
 {
     /// <summary>
     /// Interaction logic for App.xaml
