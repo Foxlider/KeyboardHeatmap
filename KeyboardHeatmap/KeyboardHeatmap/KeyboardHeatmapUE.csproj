@@ -125,6 +125,7 @@
       <DependentUpon>App.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="GlobalSuppressions.cs" />
     <Compile Include="LayoutAZERTY.xaml.cs">
       <DependentUpon>LayoutAZERTY.xaml</DependentUpon>
     </Compile>

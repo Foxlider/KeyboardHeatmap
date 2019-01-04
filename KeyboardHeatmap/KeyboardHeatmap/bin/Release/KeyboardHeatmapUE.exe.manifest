@@ -43,14 +43,14 @@
     </dependentAssembly>
   </dependency>
   <dependency>
-    <dependentAssembly dependencyType="install" allowDelayedBinding="true" codebase="KeyboardHeatmapUE.exe" size="112104">
+    <dependentAssembly dependencyType="install" allowDelayedBinding="true" codebase="KeyboardHeatmapUE.exe" size="111080">
       <assemblyIdentity name="KeyboardHeatmapUE" version="1.3.3.0" language="neutral" processorArchitecture="msil" />
       <hash>
         <dsig:Transforms>
           <dsig:Transform Algorithm="urn:schemas-microsoft-com:HashTransforms.Identity" />
         </dsig:Transforms>
         <dsig:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha256" />
-        <dsig:DigestValue>aNrYCga4ot1Jf07Zakr6XyGeB6W2hjpUNRUZwAhETNw=</dsig:DigestValue>
+        <dsig:DigestValue>JjcOAYamylzTdjoSnxTL8bApi9n1SwGqHUlb+W//W/4=</dsig:DigestValue>
       </hash>
     </dependentAssembly>
   </dependency>

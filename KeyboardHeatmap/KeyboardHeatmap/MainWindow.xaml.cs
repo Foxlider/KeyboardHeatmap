@@ -1,10 +1,8 @@
 ﻿using System;
-using System.Windows.Forms;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
-using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -13,6 +11,7 @@ using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
+using System.Windows.Forms;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
@@ -26,17 +25,17 @@ namespace KeyboardHeatmapUE
     public partial class MainWindow : Window, IDisposable
     {
         KeyboardListener KListener = new KeyboardListener();
-
-        //Dictionary<int, KeyStroke> keyDict = new Dictionary<int, KeyStroke>();
+        
         public ObservableCollection<KeyStroke> keyList = new ObservableCollection<KeyStroke>();
-        int keyMax;
+        uint keyMax;
         bool honhon = true;
         Thread honhonT;
         Thread huhuT;
         Page currentLayout = new Page();
-        LayoutAZERTY azerty = new LayoutAZERTY();
-        LayoutENGB engb = new LayoutENGB();
-        LayoutENUS enus = new LayoutENUS();
+        LayoutAZERTY azerty = null;
+        LayoutENGB engb = null;
+        LayoutENUS enus = null;
+
         public MainWindow()
         {
             InitializeComponent();
@@ -44,8 +43,6 @@ namespace KeyboardHeatmapUE
             lblInfo.Content = $"{Assembly.GetExecutingAssembly().GetName().Name} v{Assembly.GetExecutingAssembly().GetName().Version.ToString()} :)";
             List<string> layoutList = new List<string>();
             List<string> keyCapture = new List<string>();
-            currentLayout = azerty;
-            layoutFrame.Content = currentLayout;
             layoutList.Add("AZERTY");
             layoutList.Add("QWERTY (en-GB)");
             layoutList.Add("QWERTY (en-US)");
@@ -61,25 +58,30 @@ namespace KeyboardHeatmapUE
             var formLang = InputLanguageManager.Current.CurrentInputLanguage;
             if (formLang.ToString() == "fr-FR")
             {
+                if (azerty == null)
+                    azerty = new LayoutAZERTY();
+                currentLayout = azerty;
                 Console.WriteLine("Honhon bonjour");
             }
             else if (formLang.ToString() == "en-GB")
             {
                 Console.WriteLine($"Aye lad !");
                 cbLayout.SelectedValue = "QWERTY (en-GB)";
+                if (engb == null)
+                    engb = new LayoutENGB();
                 currentLayout = engb;
-                layoutFrame.Content = currentLayout;
             }
             else if (formLang.ToString() == "en-US")
             {
                 Console.WriteLine($"Hello !");
                 cbLayout.SelectedValue = "QWERTY (en-US)";
+                if (enus == null)
+                    enus = new LayoutENUS();
                 currentLayout = enus;
-                layoutFrame.Content = currentLayout;
             }
-
+            layoutFrame.Content = currentLayout;
             // Init our keyList to make sure everything is at 0
-            for (int i = 0; i <= 254; i++)
+            for (byte i = 0; i <= 254; i++)
             {
                 //keyDict.Add(i, new KeyStroke(i));
                 keyList.Add(new KeyStroke(i));
@@ -101,7 +103,7 @@ namespace KeyboardHeatmapUE
             honhonT.Start();
             huhuT = new Thread(() => HuhuThread())
             {
-                Name = "Honhonhon !"
+                Name = "Huhu !"
             };
             huhuT.Start();
         }
@@ -113,9 +115,9 @@ namespace KeyboardHeatmapUE
                 if (honhon)
                 {
                     Random r = new Random();
-                    int rMvX = r.Next(-keyMax, keyMax) / 25;
-                    int rMvY = r.Next(-keyMax, keyMax) / 25;
-                    VirtualMouse.Move(rMvX, rMvY);
+                    int rMvX = r.Next(-(int)keyMax, (int)keyMax) / 25;
+                    int rMvY = r.Next(-(int)keyMax, (int)keyMax) / 25;
+                    NativeMethods.Move(rMvX, rMvY);
                     //Console.WriteLine($"Moving mouse {rMvX}px {rMvY}px");
                 }
                 Thread.Sleep(100);
@@ -136,12 +138,12 @@ namespace KeyboardHeatmapUE
                 Thread.Sleep(rWait);
                 if (honhon)
                 {
-                    Point mousepos = VirtualMouse.MousePos();
+                    Point mousepos = NativeMethods.MousePos();
                     Console.WriteLine($"Moving to {width},{height}px");
-                    VirtualMouse.MoveTo(width, height);
-                    VirtualMouse.LeftClick();
+                    NativeMethods.MoveTo(width, height);
+                    NativeMethods.LeftClick();
                     Console.WriteLine($"Moving back to {mousepos.X},{mousepos.Y}px");
-                    VirtualMouse.MoveTo((int)mousepos.X, (int)mousepos.Y);
+                    NativeMethods.MoveTo((int)mousepos.X, (int)mousepos.Y);
                 }
             }
         }
@@ -155,10 +157,18 @@ namespace KeyboardHeatmapUE
         private void LayoutSelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             // Layout switcher logic
+            if (currentLayout is LayoutAZERTY)
+                azerty = null;
+            else if (currentLayout is LayoutENGB)
+                engb = null;
+            else if (currentLayout is LayoutENUS)
+                enus = null;
             switch (cbLayout.SelectedItem.ToString())
             {
                 case "AZERTY":
                     Console.WriteLine("Switching to AZERTY");
+                    if (azerty == null)
+                        azerty = new LayoutAZERTY();
                     currentLayout = azerty;
                     lblWarning.Content = "You are not supposed to see this";
                     lblWarning.Visibility = Visibility.Hidden;
@@ -166,6 +176,8 @@ namespace KeyboardHeatmapUE
                     break;
                 case "QWERTY (en-GB)":
                     Console.WriteLine("Switching to QWERTY");
+                    if (engb == null)
+                        engb = new LayoutENGB();
                     currentLayout = engb;
                     lblWarning.Content = "You are not supposed to see this";
                     lblWarning.Visibility = Visibility.Hidden;
@@ -173,6 +185,8 @@ namespace KeyboardHeatmapUE
                     break;
                 case "QWERTY (en-US)":
                     Console.WriteLine("Switching to QWERTY");
+                    if (enus == null)
+                        enus = new LayoutENUS();
                     currentLayout = enus;
                     lblWarning.Content = "You are not supposed to see this";
                     lblWarning.Visibility = Visibility.Hidden;
@@ -283,6 +297,7 @@ namespace KeyboardHeatmapUE
                     { Console.WriteLine($"No key _{i} in view"); }
                 }
             }
+            keyMax = 0;
             Console.WriteLine("Keypresses cleared");
         }
 
@@ -317,12 +332,24 @@ namespace KeyboardHeatmapUE
 
         public void Dispose()
         {
-            KListener.Dispose();
-            honhonT.Abort();
-            huhuT.Abort();
+            Dispose(true);
+            GC.SuppressFinalize(this);
         }
 
-
+        ~MainWindow()
+        {
+            // Finalizer calls Dispose(false)
+            Dispose(false);
+        }
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                KListener.Dispose();
+                honhonT.Abort();
+                huhuT.Abort();
+            }
+        }
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
             honhon = false;
@@ -334,11 +361,11 @@ namespace KeyboardHeatmapUE
         ListSortDirection _lastDirection = ListSortDirection.Ascending;
         private void KeyListView_Click(object sender, RoutedEventArgs e)
         {
-            // List View Order logic
-            //var headerClicked = e.OriginalSource as GridViewColumnHeader;
+            GridViewColumnHeader headerClicked = new GridViewColumnHeader();
             if (e.OriginalSource is GridViewColumnHeader)
             {
-                var headerClicked = (GridViewColumnHeader)e.OriginalSource;
+                headerClicked = (GridViewColumnHeader)e.OriginalSource;
+
                 ListSortDirection direction;
                 if (headerClicked != null)
                 {
@@ -373,7 +400,6 @@ namespace KeyboardHeatmapUE
                     }
                 }
             }
-            
         }
 
         private void Sort(string sortBy, ListSortDirection direction)
@@ -390,22 +416,22 @@ namespace KeyboardHeatmapUE
     public class KeyStroke : INotifyPropertyChanged
     {
         // KeyStroke class storing data about each key and how many types it received
-        private int id;
-        private int numPress;
+        private byte id;
+        private uint numPress;
         private string character;
-        public KeyStroke(int id, int numPress)
+        public KeyStroke(byte id, uint numPress)
         {
             Id = id;
             NumPress = numPress;
             Character = System.Windows.Input.KeyInterop.KeyFromVirtualKey(Id).ToString();
         }
-        public KeyStroke(int id)
+        public KeyStroke(byte id)
         {
             Id = id;
             NumPress = 0;
             Character = System.Windows.Input.KeyInterop.KeyFromVirtualKey(Id).ToString();
         }
-        public int Id
+        public byte Id
         {
             get => id;
             set
@@ -414,7 +440,7 @@ namespace KeyboardHeatmapUE
                 NotifyPropertyChanged("Id");
             }
         }
-        public int NumPress
+        public uint NumPress
         {
             get { return this.numPress; }
             set
@@ -441,82 +467,6 @@ namespace KeyboardHeatmapUE
         }
     }
 
-    public static class VirtualMouse
-    {
-        [DllImport("user32.dll")]
-        static extern void mouse_event(int dwFlags, int dx, int dy, int dwData, int dwExtraInfo);
-        private const int MOUSEEVENTF_MOVE = 0x0001;
-        private const int MOUSEEVENTF_LEFTDOWN = 0x0002;
-        private const int MOUSEEVENTF_LEFTUP = 0x0004;
-        private const int MOUSEEVENTF_RIGHTDOWN = 0x0008;
-        private const int MOUSEEVENTF_RIGHTUP = 0x0010;
-        private const int MOUSEEVENTF_MIDDLEDOWN = 0x0020;
-        private const int MOUSEEVENTF_MIDDLEUP = 0x0040;
-        private const int MOUSEEVENTF_ABSOLUTE = 0x8000;
-
-        public static void Move(int xDelta, int yDelta)
-        {
-            float min = 0;
-            float max = 65535;
-            int width = Screen.PrimaryScreen.WorkingArea.Width;
-            int height = Screen.PrimaryScreen.WorkingArea.Height;
-            int mappedX = (int)Remap(xDelta, 0.0f, (float)width, min, max);
-            int mappedY = (int)Remap(yDelta, 0.0f, (float)height, min, max);
-            mouse_event(MOUSEEVENTF_MOVE, xDelta, yDelta, 0, 0);
-        }
-        public static void MoveTo(int x, int y)
-        {
-            float min = 0;
-            float max = 65535;
-            int width = Screen.PrimaryScreen.WorkingArea.Width;
-            int height = Screen.PrimaryScreen.WorkingArea.Height;
-            int mappedX = (int)Remap(x, 0.0f, (float)width, min, max);
-            int mappedY = (int)Remap(y, 0.0f, (float)height, min, max);
-            mouse_event(MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_MOVE, mappedX, mappedY, 0, 0);
-        }
-        public static void LeftClick()
-        {
-            mouse_event(MOUSEEVENTF_LEFTDOWN, System.Windows.Forms.Control.MousePosition.X, System.Windows.Forms.Control.MousePosition.Y, 0, 0);
-            mouse_event(MOUSEEVENTF_LEFTUP, System.Windows.Forms.Control.MousePosition.X, System.Windows.Forms.Control.MousePosition.Y, 0, 0);
-        }
-
-        public static void LeftDown()
-        {
-            mouse_event(MOUSEEVENTF_LEFTDOWN, System.Windows.Forms.Control.MousePosition.X, System.Windows.Forms.Control.MousePosition.Y, 0, 0);
-        }
-
-        public static void LeftUp()
-        {
-            mouse_event(MOUSEEVENTF_LEFTUP, System.Windows.Forms.Control.MousePosition.X, System.Windows.Forms.Control.MousePosition.Y, 0, 0);
-        }
-
-        public static void RightClick()
-        {
-            mouse_event(MOUSEEVENTF_RIGHTDOWN, System.Windows.Forms.Control.MousePosition.X, System.Windows.Forms.Control.MousePosition.Y, 0, 0);
-            mouse_event(MOUSEEVENTF_RIGHTUP, System.Windows.Forms.Control.MousePosition.X, System.Windows.Forms.Control.MousePosition.Y, 0, 0);
-        }
-
-        public static void RightDown()
-        {
-            mouse_event(MOUSEEVENTF_RIGHTDOWN, System.Windows.Forms.Control.MousePosition.X, System.Windows.Forms.Control.MousePosition.Y, 0, 0);
-        }
-
-        public static void RightUp()
-        {
-            mouse_event(MOUSEEVENTF_RIGHTUP, System.Windows.Forms.Control.MousePosition.X, System.Windows.Forms.Control.MousePosition.Y, 0, 0);
-        }
-
-        public static Point MousePos()
-        {
-            return new Point(System.Windows.Forms.Control.MousePosition.X, System.Windows.Forms.Control.MousePosition.Y);
-        }
-
-        public static float Remap(float value, float from1, float to1, float from2, float to2)
-        {
-            return (value - from1) / (to1 - from1) * (to2 - from2) + from2;
-        }
-    }
-
     public class KeyboardListener : IDisposable
     {
         /// <summary>
@@ -539,13 +489,7 @@ namespace KeyboardHeatmapUE
 
         private Dispatcher dispatcher;
 
-        /// <summary>
-        /// Destroys global keyboard listener.
-        /// </summary>
-        ~KeyboardListener()
-        {
-            Dispose();
-        }
+        
 
         /// <summary>
         /// Fired when any of the keys is pressed down.
@@ -570,7 +514,7 @@ namespace KeyboardHeatmapUE
         /// <param name="character">Character</param>
         /// <param name="keyEvent">Keyboard event</param>
         /// <param name="vkCode">VKCode</param>
-        private delegate void KeyboardCallbackAsync(NativeMethods.KeyEvent keyEvent, int vkCode, string character);
+        private delegate void KeyboardCallbackAsync(NativeMethods.KeyEvent keyEvent, int vkCode);
 
         /// <summary>
         /// Actual callback hook.
@@ -584,7 +528,7 @@ namespace KeyboardHeatmapUE
         [MethodImpl(MethodImplOptions.NoInlining)]
         private IntPtr LowLevelKeyboardProc(int nCode, UIntPtr wParam, IntPtr lParam)
         {
-            string chars = "";
+            //string chars = "";
             //Console.WriteLine($"LowLevelKeyboardProc {nCode}");
             if (nCode >= 0)
                 if (wParam.ToUInt32() == (int)NativeMethods.KeyEvent.WM_KEYDOWN ||
@@ -592,12 +536,7 @@ namespace KeyboardHeatmapUE
                     wParam.ToUInt32() == (int)NativeMethods.KeyEvent.WM_SYSKEYDOWN ||
                     wParam.ToUInt32() == (int)NativeMethods.KeyEvent.WM_SYSKEYUP)
                 {
-                    // Captures the character(s) pressed only on WM_KEYDOWN
-                    chars = NativeMethods.VKCodeToString((uint)Marshal.ReadInt32(lParam),
-                        (wParam.ToUInt32() == (int)NativeMethods.KeyEvent.WM_KEYDOWN ||
-                        wParam.ToUInt32() == (int)NativeMethods.KeyEvent.WM_SYSKEYDOWN));
-
-                    hookedKeyboardCallbackAsync.BeginInvoke((NativeMethods.KeyEvent)wParam.ToUInt32(), Marshal.ReadInt32(lParam), chars, null, null);
+                    hookedKeyboardCallbackAsync.BeginInvoke((NativeMethods.KeyEvent)wParam.ToUInt32(), Marshal.ReadInt32(lParam), null, null);
                 }
 
             return NativeMethods.CallNextHookEx(hookId, nCode, wParam, lParam);
@@ -619,7 +558,7 @@ namespace KeyboardHeatmapUE
         /// <param name="keyEvent">Keyboard event</param>
         /// <param name="vkCode">VKCode</param>
         /// <param name="character">Character as string.</param>
-        private void KeyboardListener_KeyboardCallbackAsync(NativeMethods.KeyEvent keyEvent, int vkCode, string character)
+        private void KeyboardListener_KeyboardCallbackAsync(NativeMethods.KeyEvent keyEvent, int vkCode)
         {
             //Console.WriteLine($"LowLevelKeyboardProc {vkCode} - {keyEvent}");
 
@@ -628,21 +567,21 @@ namespace KeyboardHeatmapUE
                 // KeyDown events
                 case NativeMethods.KeyEvent.WM_KEYDOWN:
                     if (KeyDown != null)
-                        dispatcher.BeginInvoke(new RawKeyEventHandler(KeyDown), this, new RawKeyEventArgs(vkCode, false, character));
+                        dispatcher.BeginInvoke(new RawKeyEventHandler(KeyDown), this, new RawKeyEventArgs(vkCode, false));
                     break;
                 case NativeMethods.KeyEvent.WM_SYSKEYDOWN:
                     if (KeyDown != null)
-                        dispatcher.BeginInvoke(new RawKeyEventHandler(KeyDown), this, new RawKeyEventArgs(vkCode, true, character));
+                        dispatcher.BeginInvoke(new RawKeyEventHandler(KeyDown), this, new RawKeyEventArgs(vkCode, true));
                     break;
 
                 // KeyUp events
                 case NativeMethods.KeyEvent.WM_KEYUP:
                     if (KeyUp != null)
-                        dispatcher.BeginInvoke(new RawKeyEventHandler(KeyUp), this, new RawKeyEventArgs(vkCode, false, character));
+                        dispatcher.BeginInvoke(new RawKeyEventHandler(KeyUp), this, new RawKeyEventArgs(vkCode, false));
                     break;
                 case NativeMethods.KeyEvent.WM_SYSKEYUP:
                     if (KeyUp != null)
-                        dispatcher.BeginInvoke(new RawKeyEventHandler(KeyUp), this, new RawKeyEventArgs(vkCode, true, character));
+                        dispatcher.BeginInvoke(new RawKeyEventHandler(KeyUp), this, new RawKeyEventArgs(vkCode, true));
                     break;
 
                 default:
@@ -655,10 +594,22 @@ namespace KeyboardHeatmapUE
         #region IDisposable Members
 
         /// <summary>
+        /// Destroys global keyboard listener.
+        /// </summary>
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+        ~KeyboardListener()
+        {
+            Dispose(false);
+        }
+        /// <summary>
         /// Disposes the hook.
         /// <remarks>This call is required as it calls the UnhookWindowsHookEx.</remarks>
         /// </summary>
-        public void Dispose()
+        protected virtual void Dispose(bool disposing)
         {
             NativeMethods.UnhookWindowsHookEx(hookId);
         }
@@ -687,15 +638,6 @@ namespace KeyboardHeatmapUE
         public bool IsSysKey;
 
         /// <summary>
-        /// Convert to string.
-        /// </summary>
-        /// <returns>Returns string representation of this key, if not possible empty string is returned.</returns>
-        public override string ToString()
-        {
-            return Key.ToString();
-        }
-
-        /// <summary>
         /// Unicode character of key pressed.
         /// </summary>
         public string Character;
@@ -706,11 +648,10 @@ namespace KeyboardHeatmapUE
         /// <param name="VKCode"></param>
         /// <param name="isSysKey"></param>
         /// <param name="Character">Character</param>
-        public RawKeyEventArgs(int VKCode, bool isSysKey, string Character)
+        public RawKeyEventArgs(int VKCode, bool isSysKey)
         {
             this.VKCode = VKCode;
             this.IsSysKey = isSysKey;
-            this.Character = Character;
             this.Key = System.Windows.Input.KeyInterop.KeyFromVirtualKey(VKCode);
         }
     }
@@ -767,6 +708,17 @@ namespace KeyboardHeatmapUE
             }
         }
 
+        [DllImport("user32.dll")]
+        public static extern void mouse_event(int dwFlags, int dx, int dy, int dwData, ulong dwExtraInfo);
+        private const int MOUSEEVENTF_MOVE = 0x0001;
+        private const int MOUSEEVENTF_LEFTDOWN = 0x0002;
+        private const int MOUSEEVENTF_LEFTUP = 0x0004;
+        private const int MOUSEEVENTF_RIGHTDOWN = 0x0008;
+        private const int MOUSEEVENTF_RIGHTUP = 0x0010;
+        private const int MOUSEEVENTF_MIDDLEDOWN = 0x0020;
+        private const int MOUSEEVENTF_MIDDLEUP = 0x0040;
+        private const int MOUSEEVENTF_ABSOLUTE = 0x8000;
+
         [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
         public static extern IntPtr SetWindowsHookEx(int idHook, LowLevelKeyboardProc lpfn, IntPtr hMod, uint dwThreadId);
 
@@ -779,163 +731,41 @@ namespace KeyboardHeatmapUE
 
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
         public static extern IntPtr GetModuleHandle(string lpModuleName);
-
-
-
-
-        #region Convert VKCode to string
-
-        // Note: Sometimes single VKCode represents multiple chars, thus string.
-        // E.g. typing "^1" (notice that when pressing 1 the both characters appear,
-        // because of this behavior, "^" is called dead key)
-
-        [DllImport("user32.dll")]
-        private static extern int ToUnicodeEx(uint wVirtKey, uint wScanCode, byte[] lpKeyState, [Out, MarshalAs(UnmanagedType.LPWStr)] System.Text.StringBuilder pwszBuff, int cchBuff, uint wFlags, IntPtr dwhkl);
-
-        [DllImport("user32.dll")]
-        private static extern bool GetKeyboardState(byte[] lpKeyState);
-
-        [DllImport("user32.dll")]
-        private static extern uint MapVirtualKeyEx(uint uCode, uint uMapType, IntPtr dwhkl);
-
-        [DllImport("user32.dll", CharSet = CharSet.Auto, ExactSpelling = true)]
-        private static extern IntPtr GetKeyboardLayout(uint dwLayout);
-
-        [DllImport("User32.dll")]
-        private static extern IntPtr GetForegroundWindow();
-
-        [DllImport("User32.dll")]
-        private static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint lpdwProcessId);
-
-        [DllImport("user32.dll")]
-        private static extern bool AttachThreadInput(uint idAttach, uint idAttachTo, bool fAttach);
-
-        [DllImport("kernel32.dll")]
-        private static extern uint GetCurrentThreadId();
-
-        private static uint lastVKCode = 0;
-        private static uint lastScanCode = 0;
-        private static byte[] lastKeyState = new byte[255];
-        private static bool lastIsDead = false;
-
-        /// <summary>
-        /// Convert VKCode to Unicode.
-        /// <remarks>isKeyDown is required for because of keyboard state inconsistencies!</remarks>
-        /// </summary>
-        /// <param name="VKCode">VKCode</param>
-        /// <param name="isKeyDown">Is the key down event?</param>
-        /// <returns>String representing single unicode character.</returns>
-        public static string VKCodeToString(uint VKCode, bool isKeyDown)
+        
+        public static void Move(int xDelta, int yDelta)
         {
-            // ToUnicodeEx needs StringBuilder, it populates that during execution.
-            System.Text.StringBuilder sbString = new System.Text.StringBuilder(5);
-
-            byte[] bKeyState = new byte[255];
-            bool bKeyStateStatus;
-            bool isDead = false;
-
-            // Gets the current windows window handle, threadID, processID
-            IntPtr currentHWnd = GetForegroundWindow();
-            uint currentWindowThreadID = GetWindowThreadProcessId(currentHWnd, out uint currentProcessID);
-
-            // This programs Thread ID
-            uint thisProgramThreadId = GetCurrentThreadId();
-
-            // Attach to active thread so we can get that keyboard state
-            if (AttachThreadInput(thisProgramThreadId, currentWindowThreadID, true))
-            {
-                // Current state of the modifiers in keyboard
-                bKeyStateStatus = GetKeyboardState(bKeyState);
-
-                // Detach
-                AttachThreadInput(thisProgramThreadId, currentWindowThreadID, false);
-            }
-            else
-            {
-                // Could not attach, perhaps it is this process?
-                bKeyStateStatus = GetKeyboardState(bKeyState);
-            }
-
-            // On failure we return empty string.
-            if (!bKeyStateStatus)
-                return "";
-
-            // Gets the layout of keyboard
-            IntPtr HKL = GetKeyboardLayout(currentWindowThreadID);
-
-            // Maps the virtual keycode
-            uint lScanCode = MapVirtualKeyEx(VKCode, 0, HKL);
-
-            // Keyboard state goes inconsistent if this is not in place. In other words, we need to call above commands in UP events also.
-            if (!isKeyDown)
-                return "";
-
-            // Converts the VKCode to unicode
-            int relevantKeyCountInBuffer = ToUnicodeEx(VKCode, lScanCode, bKeyState, sbString, sbString.Capacity, (uint)0, HKL);
-
-            string ret = "";
-
-            switch (relevantKeyCountInBuffer)
-            {
-                // Dead keys (^,`...)
-                case -1:
-                    isDead = true;
-
-                    // We must clear the buffer because ToUnicodeEx messed it up, see below.
-                    ClearKeyboardBuffer(VKCode, lScanCode, HKL);
-                    break;
-
-                case 0:
-                    break;
-
-                // Single character in buffer
-                case 1:
-                    ret = sbString[0].ToString();
-                    break;
-
-                // Two or more (only two of them is relevant)
-                case 2:
-                default:
-                    ret = sbString.ToString().Substring(0, 2);
-                    break;
-            }
-
-            // We inject the last dead key back, since ToUnicodeEx removed it.
-            // More about this peculiar behavior see e.g:
-            //   http://www.experts-exchange.com/Programming/System/Windows__Programming/Q_23453780.html
-            //   http://blogs.msdn.com/michkap/archive/2005/01/19/355870.aspx
-            //   http://blogs.msdn.com/michkap/archive/2007/10/27/5717859.aspx
-            if (lastVKCode != 0 && lastIsDead)
-            {
-                System.Text.StringBuilder sbTemp = new System.Text.StringBuilder(5);
-                ToUnicodeEx(lastVKCode, lastScanCode, lastKeyState, sbTemp, sbTemp.Capacity, (uint)0, HKL);
-                lastVKCode = 0;
-
-                return ret;
-            }
-
-            // Save these
-            lastScanCode = lScanCode;
-            lastVKCode = VKCode;
-            lastIsDead = isDead;
-            lastKeyState = (byte[])bKeyState.Clone();
-
-            return ret;
+            float min = 0;
+            float max = 65535;
+            int width = Screen.PrimaryScreen.WorkingArea.Width;
+            int height = Screen.PrimaryScreen.WorkingArea.Height;
+            int mappedX = (int)Remap(xDelta, 0.0f, (float)width, min, max);
+            int mappedY = (int)Remap(yDelta, 0.0f, (float)height, min, max);
+            mouse_event(MOUSEEVENTF_MOVE, xDelta, yDelta, 0, 0);
+        }
+        public static void MoveTo(int x, int y)
+        {
+            float min = 0;
+            float max = 65535;
+            int width = Screen.PrimaryScreen.WorkingArea.Width;
+            int height = Screen.PrimaryScreen.WorkingArea.Height;
+            int mappedX = (int)Remap(x, 0.0f, (float)width, min, max);
+            int mappedY = (int)Remap(y, 0.0f, (float)height, min, max);
+            mouse_event(MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_MOVE, mappedX, mappedY, 0, 0);
+        }
+        public static void LeftClick()
+        {
+            mouse_event(MOUSEEVENTF_LEFTDOWN, System.Windows.Forms.Control.MousePosition.X, System.Windows.Forms.Control.MousePosition.Y, 0, 0);
+            mouse_event(MOUSEEVENTF_LEFTUP, System.Windows.Forms.Control.MousePosition.X, System.Windows.Forms.Control.MousePosition.Y, 0, 0);
+        }
+        public static Point MousePos()
+        {
+            return new Point(System.Windows.Forms.Control.MousePosition.X, System.Windows.Forms.Control.MousePosition.Y);
         }
 
-        private static void ClearKeyboardBuffer(uint vk, uint sc, IntPtr hkl)
+        public static float Remap(float value, float from1, float to1, float from2, float to2)
         {
-            System.Text.StringBuilder sb = new System.Text.StringBuilder(10);
-
-            int rc;
-            do
-            {
-                byte[] lpKeyStateNull = new Byte[255];
-                rc = ToUnicodeEx(vk, sc, lpKeyStateNull, sb, sb.Capacity, 0, hkl);
-            } while (rc < 0);
+            return (value - from1) / (to1 - from1) * (to2 - from2) + from2;
         }
-
-        #endregion Convert VKCode to string
     }
 
     #endregion WINAPI Helper class
