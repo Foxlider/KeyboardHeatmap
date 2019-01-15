@@ -1,13 +1,15 @@
-﻿using System;
+﻿using Microsoft.Win32;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
-using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
@@ -29,6 +31,7 @@ namespace KeyboardHeatmap
         //Dictionary<int, KeyStroke> keyDict = new Dictionary<int, KeyStroke>();
         public ObservableCollection<KeyStroke> keyList = new ObservableCollection<KeyStroke>();
         int keyMax;
+        bool csvAddLine = false;
         Page currentLayout = new Page();
 
         LayoutAZERTY azerty = new LayoutAZERTY();
@@ -37,6 +40,7 @@ namespace KeyboardHeatmap
         public MainWindow()
         {
             InitializeComponent();
+            Directory.CreateDirectory(Path.Combine(Environment.ExpandEnvironmentVariables("%Public%"), "KeyboardHeatmap"));
             // Find some better way to do all this ?
             lblInfo.Content = $"{Assembly.GetExecutingAssembly().GetName().Name} v{Assembly.GetExecutingAssembly().GetName().Version.ToString()}";
             List<string> layoutList = new List<string>();
@@ -203,6 +207,7 @@ namespace KeyboardHeatmap
         }
         private void Btn_Reset(object sender, RoutedEventArgs e)
         {
+            csvAddLine = true;
             for (int i = 0; i <= 254; i++)
             {
                 if (keyList[i].NumPress > 0)
@@ -222,6 +227,108 @@ namespace KeyboardHeatmap
             Console.WriteLine("Keypresses cleared");
         }
 
+        private void Btn_Export(object sender, RoutedEventArgs e)
+        {
+            Console.WriteLine("Exporting to CSV");
+            try
+            {
+                if (csvAddLine)
+                {
+                    if (EditCsvFile())
+                        csvAddLine = false;
+                }
+                else
+                { NewCsvFile(); }
+            }
+            catch (IOException)
+            { MessageBoxResult result = MessageBox.Show("Impossible to write in file. Please close it before saving.", "CSV export error", MessageBoxButton.OK, MessageBoxImage.Error); }
+        }
+
+        private void NewCsvFile(bool fromCSVEditor = false)
+        {
+            try
+            {
+                List<object[]> allLines = (
+                        from key in keyList
+                        select new object[]
+                        {
+                            key.Id.ToString(),
+                            key.Character,
+                            key.NumPress,
+                        }).ToList();
+                StringBuilder csv = new StringBuilder();
+                allLines.ForEach(line =>
+                { csv.AppendLine(string.Join(",", line)); });
+                SaveFileDialog saveFileDialog = new SaveFileDialog
+                {
+                    Title = "New CSV file",
+                    AddExtension = true,
+                    DefaultExt = "csv",
+                    FileName = "heatmap.csv",
+                    //InitialDirectory = Directory.GetCurrentDirectory()
+                    InitialDirectory = Path.Combine(Environment.ExpandEnvironmentVariables("%Public%"), "KeyboardHeatmap")
+                };
+                Console.WriteLine($"{saveFileDialog.InitialDirectory}/{saveFileDialog.FileName}.{saveFileDialog.DefaultExt}");
+                if (saveFileDialog.ShowDialog() == true)
+                { File.WriteAllText(saveFileDialog.FileName, csv.ToString()); }
+                else if (!fromCSVEditor)
+                { EditCsvFile(true); }
+            }
+            catch (IOException)
+            { MessageBoxResult result = MessageBox.Show("Impossible to write in file. Please close it before saving.", "CSV export error", MessageBoxButton.OK, MessageBoxImage.Error); }
+        }
+
+        private bool EditCsvFile(bool fromCSVEditor = false)
+        {
+            try
+            {
+                OpenFileDialog openFileDialog = new OpenFileDialog
+                {
+                    Title = "Editing CSV file",
+                    DefaultExt = "csv",
+                    FileName = "heatmap.csv",
+                    //InitialDirectory = Directory.GetCurrentDirectory()
+                    InitialDirectory = Path.Combine(Environment.ExpandEnvironmentVariables("%Public%"), "KeyboardHeatmap")
+                };
+                var oui = Environment.ExpandEnvironmentVariables("%Public%");
+                if (openFileDialog.ShowDialog() == true)
+                {
+                    string[] lines = File.ReadAllLines(openFileDialog.FileName);
+
+                    if (lines.Length == 0)
+                    {
+                        throw new InvalidOperationException("The file is empty");
+                    }
+                    for (int i = 0; i < lines.Length; i++)
+                    {
+                        lines[i] += "," + keyList[i].NumPress;
+                    }
+                    Console.WriteLine("Done");
+                    StringBuilder csv = new StringBuilder();
+                    foreach (string line in lines)
+                    { csv.AppendLine(line); }
+                    File.WriteAllText(openFileDialog.FileName, csv.ToString());
+                    return true;
+                }
+                else if (!fromCSVEditor)
+                {
+                    NewCsvFile(true);
+                    return true;
+                }
+                return false;
+            }
+            catch (IOException)
+            {
+                MessageBoxResult result = MessageBox.Show("Impossible to write in file. Please close it before saving.", "CSV export error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return true;
+            }
+        }
+
+        /// <summary>
+        /// Handle the layout changer 
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void CbLayout_DropDownClosed(object sender, EventArgs e)
         {
             if (cbLayout.IsDropDownOpen == false)

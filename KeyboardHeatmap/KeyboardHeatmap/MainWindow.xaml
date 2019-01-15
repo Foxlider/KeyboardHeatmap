@@ -33,7 +33,9 @@
             </TabItem>
             <TabItem x:Name="Data" Header="Table">
                 <Grid Background="#FFE5E5E5">
-                    <ListView x:Name="keyListView" GridViewColumnHeader.Click="KeyListView_Click">
+                    <Button Content="Export to CSV" Click="Btn_Export" HorizontalAlignment="Left" Width="150" Height="25" VerticalAlignment="Top" Margin="5,0,0,0" />
+                    <Button Content="Reset" Click="Btn_Reset" HorizontalAlignment="Left" Width="150" Height="25" VerticalAlignment="Top" Margin="160,0,0,0"/>
+                    <ListView x:Name="keyListView" GridViewColumnHeader.Click="KeyListView_Click" Margin="0,25,0,0">
                         <ListView.View>
                             <GridView>
                                 <GridViewColumn Width="50" Header="Id" DisplayMemberBinding="{Binding Id, Mode=TwoWay}"  />
