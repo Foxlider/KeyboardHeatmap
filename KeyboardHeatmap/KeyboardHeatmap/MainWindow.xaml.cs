@@ -278,6 +278,11 @@ namespace KeyboardHeatmap
             { MessageBoxResult result = MessageBox.Show("Impossible to write in file. Please close it before saving.", "CSV export error", MessageBoxButton.OK, MessageBoxImage.Error); }
         }
 
+        /// <summary>
+        /// Edit the 
+        /// </summary>
+        /// <param name="fromCSVEditor"></param>
+        /// <returns></returns>
         private bool EditCsvFile(bool fromCSVEditor = false)
         {
             try
@@ -335,6 +340,11 @@ namespace KeyboardHeatmap
             { Console.WriteLine("Closed Selector"); }
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void CbKeyCapture_DropDownClosed(object sender, EventArgs e)
         {
             try
@@ -358,6 +368,9 @@ namespace KeyboardHeatmap
             Keyboard.ClearFocus();  // And clear all focus hopefully
         }
 
+        /// <summary>
+        /// Dispose function
+        /// </summary>
         public void Dispose()
         {
             Dispose(true);
@@ -375,11 +388,30 @@ namespace KeyboardHeatmap
                 KListener.Dispose();
             }
         }
+
+        /// <summary>
+        /// Handle the shutdown of the app
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
+            MessageBoxResult result = MessageBox.Show("Would you like to save your statistics ?", "CSV Export", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+            switch (result)
+            {
+                case MessageBoxResult.Yes:
+                    NewCsvFile();
+                    MessageBox.Show($"File saved (default in {Path.Combine(Environment.ExpandEnvironmentVariables("%Public%"), "KeyboardHeatmap")})", "CSV Export", MessageBoxButton.OK ,MessageBoxImage.Information);
+                    break;
+                case MessageBoxResult.No:
+                    break;
+            }
             this.Dispose();
         }
 
+        /// <summary>
+        /// Handle the sort algorythms for the dataGrid
+        /// </summary>
         GridViewColumnHeader _lastHeaderClicked = null;
         ListSortDirection _lastDirection = ListSortDirection.Ascending;
         private void KeyListView_Click(object sender, RoutedEventArgs e)
@@ -427,6 +459,11 @@ namespace KeyboardHeatmap
             
         }
 
+        /// <summary>
+        /// Sort function for the dataGrid
+        /// </summary>
+        /// <param name="sortBy"></param>
+        /// <param name="direction"></param>
         private void Sort(string sortBy, ListSortDirection direction)
         {
             ICollectionView dataView = CollectionViewSource.GetDefaultView(keyListView.ItemsSource);

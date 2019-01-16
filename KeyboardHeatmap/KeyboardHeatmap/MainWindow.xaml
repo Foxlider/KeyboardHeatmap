@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:KeyboardHeatmap"
         xmlns:Properties="clr-namespace:KeyboardHeatmap.Properties" x:Name="Container" x:Class="KeyboardHeatmap.MainWindow"
         mc:Ignorable="d"
-        Title="Keyboard Heatmap" Height="370" Width="780" ResizeMode="CanMinimize">
+        Title="Keyboard Heatmap" Height="370" Width="780" ResizeMode="CanMinimize" Closing="Window_Closing">
     <Grid>
         <TabControl Margin="10,10,10,20">
             <TabItem x:Name="Heatmap" Header="Heatmap">
